@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeriThreat | Threat Intelligence Exchange Framework</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0a0f1d',
+                            card: '#111827',
+                            border: '#1f2937',
+                            cyan: '#06b6d4',
+                            blue: '#3b82f6',
+                            accent: '#10b981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-[#060913] text-gray-100 font-sans antialiased selection:bg-cyan-500 selection:text-white">
+
+    <!-- Navbar -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-[#060913]/80 backdrop-blur-md border-b border-gray-800/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="text-2xl font-bold tracking-wider text-white">VERI<span class="text-cyan-400">THREAT</span></span>
+            </div>
+            
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-300">
+                <a href="#problema" class="hover:text-cyan-400 transition-colors">Desafío</a>
+                <a href="#solucion" class="hover:text-cyan-400 transition-colors">Solución</a>
+                <a href="#fases" class="hover:text-cyan-400 transition-colors">Fases del Proyecto</a>
+                <a href="#stack" class="hover:text-cyan-400 transition-colors">Stack Tecnológico</a>
+                <a href="#alineacion" class="hover:text-cyan-400 transition-colors">Alineación Estratégica</a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <a href="#fases" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-all shadow-lg shadow-cyan-500/25">
+                    Ver Roadmap
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative pt-36 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            
+            <div class="inline-flex items-center space-x-2 bg-gray-800/80 border border-cyan-500/30 rounded-full px-4 py-1.5 text-xs text-cyan-300 mb-8 backdrop-blur-sm">
+                <span class="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                <span>Plataforma de Ciberinteligencia en Red</span>
+            </div>
+
+            <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white mb-6 leading-tight">
+                Inteligencia de Amenazas <br class="hidden sm:inline"/>
+                <span class="bg-gradient-to-r from-cyan-400 via-blue-400 to-teal-300 bg-clip-text text-transparent">Inmutable y Predictiva</span>
+            </h1>
+
+            <p class="max-w-3xl mx-auto text-lg md:text-xl text-gray-400 mb-10 leading-relaxed">
+                Plataforma descentralizada para el intercambio seguro y verificado de Indicadores de Compromiso (IOCs), respaldada por **Microservicios Java**, **Inteligencia Artificial** y **Hyperledger Fabric**.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#fases" class="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold px-8 py-4 rounded-xl shadow-xl shadow-cyan-500/20 hover:scale-105 transition-transform flex items-center justify-center space-x-2">
+                    <span>Explorar las 6 Fases</span>
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </a>
+                <a href="#stack" class="w-full sm:w-auto bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-700 font-semibold px-8 py-4 rounded-xl transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="cpu" class="w-5 h-5 text-cyan-400"></i>
+                    <span>Ver Arquitectura</span>
+                </a>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-4xl mx-auto pt-8 border-t border-gray-800/80">
+                <div class="p-4 rounded-xl bg-gray-900/40 border border-gray-800">
+                    <p class="text-2xl font-bold text-cyan-400">0 €</p>
+                    <p class="text-xs text-gray-400">Coste de Licencias (100% Open Source)</p>
+                </div>
+                <div class="p-4 rounded-xl bg-gray-900/40 border border-gray-800">
+                    <p class="text-2xl font-bold text-blue-400">3 Capas</p>
+                    <p class="text-xs text-gray-400">Java + IA + Blockchain</p>
+                </div>
+                <div class="p-4 rounded-xl bg-gray-900/40 border border-gray-800">
+                    <p class="text-2xl font-bold text-emerald-400">100%</p>
+                    <p class="text-xs text-gray-400">Trazabilidad Inmutable</p>
+                </div>
+                <div class="p-4 rounded-xl bg-gray-900/40 border border-gray-800">
+                    <p class="text-2xl font-bold text-purple-400">Automático</p>
+                    <p class="text-xs text-gray-400">Scoring de Riesgo con IA</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- El Problema / Desafío -->
+    <section id="problema" class="py-20 bg-[#080d1a] border-t border-gray-800/40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">El Desafío Actual</h2>
+                <h3 class="text-3xl md:text-4xl font-bold text-white">¿Por qué las organizaciones necesitan VeriThreat?</h3>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="p-8 rounded-2xl bg-gray-900/60 border border-gray-800 hover:border-red-500/40 transition-all group">
+                    <div class="w-12 h-12 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="share-2" class="w-6 h-6"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-3">1. Inteligencia Fragmentada</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Las empresas detectan amenazas (IPs, hashes, dominios) aisladamente sin mecanismos rápidos y seguros para compartirlos entre organizaciones socias.
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="p-8 rounded-2xl bg-gray-900/60 border border-gray-800 hover:border-amber-500/40 transition-all group">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-3">2. Falta de Confianza en el Dato</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Es complejo verificar la autenticidad, timestamp exacto y origen de los IOCs compartidos, corriendo el riesgo de inyectar datos falsos o duplicados.
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="p-8 rounded-2xl bg-gray-900/60 border border-gray-800 hover:border-cyan-500/40 transition-all group">
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="activity" class="w-6 h-6"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-3">3. Fatiga de Alertas en el SOC</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        El volumen masivo de alertas manuales sobrepasa la capacidad operativa de los analistas, ralentizando la respuesta ante ciberataques reales.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- La Solución -->
+    <section id="solucion" class="py-20 bg-[#060913]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-gradient-to-r from-gray-900 via-gray-900/80 to-gray-900 border border-cyan-500/20 rounded-3xl p-8 md:p-12 relative overflow-hidden">
+                <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
+                
+                <div class="grid lg:grid-cols-2 gap-12 items-center relative z-10">
+                    <div>
+                        <span class="text-cyan-400 text-sm font-semibold tracking-wider uppercase mb-2 block">Propuesta de Valor</span>
+                        <h3 class="text-3xl md:text-4xl font-extrabold text-white mb-6">
+                            Una respuesta integral respaldada por tres pilares tecnológicos
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 mt-1">
+                                    <i data-lucide="server" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="text-lg font-semibold text-white">Microservicios en Java</h5>
+                                    <p class="text-gray-400 text-sm">Ingesta asíncrona, normalización y distribución mediante Spring Boot y Apache Kafka.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start space-x-4">
+                                <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-1">
+                                    <i data-lucide="brain" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="text-lg font-semibold text-white">Motor de IA & LLM Local</h5>
+                                    <p class="text-gray-400 text-sm">Scoring de riesgo automático con Scikit-Learn y síntesis de incidentes mediante Ollama (Llama 3).</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start space-x-4">
+                                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-1">
+                                    <i data-lucide="link" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="text-lg font-semibold text-white">Blockchain Permisionada</h5>
+                                    <p class="text-gray-400 text-sm">Hyperledger Fabric registra el hash e historia inmutable de cada amenaza auditada.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-950 p-6 rounded-2xl border border-gray-800 shadow-2xl">
+                        <div class="flex items-center justify-between pb-4 border-b border-gray-800 mb-4">
+                            <span class="text-xs font-mono text-gray-400">IOC Threat Record #8942</span>
+                            <span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-semibold">VERIFICADO EN BLOCKCHAIN</span>
+                        </div>
+                        <div class="space-y-3 font-mono text-xs text-gray-300">
+                            <div><span class="text-gray-500">Indicador:</span> <span class="text-cyan-400">192.168.100.45 (IP Maliciosa)</span></div>
+                            <div><span class="text-gray-500">AI Risk Score:</span> <span class="text-red-400">8.9 / 10 (Severidad Alta)</span></div>
+                            <div><span class="text-gray-500">Resumen LLM:</span> "Actividad C2 detectada asociada a campaña de malware Ransomware."</div>
+                            <div><span class="text-gray-500">Ledger Hash:</span> <span class="text-gray-400">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span></div>
+                            <div><span class="text-gray-500">Organización Emisora:</span> SOC Partner Node Alpha</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Fases del Proyecto (Roadmap) -->
+    <section id="fases" class="py-20 bg-[#080d1a] border-t border-gray-800/40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Cronograma del Proyecto</h2>
+                <h3 class="text-3xl md:text-4xl font-bold text-white">Las 6 Fases de Desarrollo</h3>
+                <p class="text-gray-400 mt-3">Metodología modular estimada para un ciclo de desarrollo de 14 a 16 semanas.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <!-- Fase 1 -->
+                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-cyan-500/50 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">Fase 01</span>
+                            <span class="text-xs text-gray-400 font-mono">Semanas 1 - 2</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-white mb-2">Diseño y Modelado</h4>
+                        <p class="text-gray-400 text-sm mb-4">Definición de arquitectura en 5 capas y estandarización del esquema del dato.</p>
+                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-cyan-400 mr-2"></i>Modelo de datos estándar IOC (IPs, hashes, dominios).</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-cyan-400 mr-2"></i>Contratos de API REST/JSON inter-servicios.</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-cyan-400 mr-2"></i>Diagramas C4 de arquitectura.</li>
+                        </ul>
+                    </div>
+                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
+                        Entregable: Especificación de Arquitectura
+                    </div>
+                </div>
+
+                <!-- Fase 2 -->
+                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-blue-500/50 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">Fase 02</span>
+                            <span class="text-xs text-gray-400 font-mono">Semanas 3 - 4</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-white mb-2">Dataset & Motor IA</h4>
+                        <p class="text-gray-400 text-sm mb-4">Preparación de datos abiertos y entrenamiento del modelo predictivo.</p>
+                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-blue-400 mr-2"></i>Ingesta OSINT (MISP, AlienVault, abuse.ch).</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-blue-400 mr-2"></i>Modelo Scikit-learn para scoring de riesgo.</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-blue-400 mr-2"></i>Integración LLM Ollama (Llama 3 local).</li>
+                        </ul>
+                    </div>
+                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
+                        Entregable: Pipeline de IA Evaluado
+                    </div>
+                </div>
+
+                <!-- Fase 3 -->
+                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-emerald-500/50 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Fase 03</span>
+                            <span class="text-xs text-gray-400 font-mono">Semanas 5 - 7</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-white mb-2">Backend Microservicios</h4>
+                        <p class="text-gray-400 text-sm mb-4">Construcción del núcleo distribuido en Java para el procesamiento de datos.</p>
+                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mr-2"></i>Spring Boot 3 & Spring Cloud Gateway.</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mr-2"></i>Persistencia PostgreSQL + Mensajería Kafka.</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mr-2"></i>Orquestación completa con Docker Compose.</li>
+                        </ul>
+                    </div>
+                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
+                        Entregable: Cluster de Microservicios Functional
+                    </div>
+                </div>
+
+                <!-- Fase 4 -->
+                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-purple-500/50 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">Fase 04</span>
+                            <span class="text-xs text-gray-400 font-mono">Semanas 8 - 10</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-white mb-2">Red Blockchain</h4>
+                        <p class="text-gray-400 text-sm mb-4">Red permisionada para auditoría e inmutabilidad descentralizada.</p>
+                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-purple-400 mr-2"></i>Despliegue Hyperledger Fabric (2-3 nodos).</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-purple-400 mr-2"></i>Desarrollo Chaincode (Go/Java) para registro.</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-purple-400 mr-2"></i>Conexión vía Fabric SDK para Java.</li>
+                        </ul>
+                    </div>
+                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
+                        Entregable: Red Fabric & Chaincode Desplegados
+                    </div>
+                </div>
+
+                <!-- Fase 5 -->
+                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-pink-500/50 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-pink-400 bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20">Fase 05</span>
+                            <span class="text-xs text-gray-400 font-mono">Semanas 11 - 12</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-white mb-2">Frontend SOC & E2E</h4>
+                        <p class="text-gray-400 text-sm mb-4">Interfaz web para analistas e integración completa de componentes.</p>
+                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-pink-400 mr-2"></i>Dashboard interactivo React + Tailwind CSS.</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-pink-400 mr-2"></i>Visualización gráfica de alertas (Recharts).</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-pink-400 mr-2"></i>Comprobador visual de validación en Blockchain.</li>
+                        </ul>
+                    </div>
+                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
+                        Entregable: MVP Completo Operativo
+                    </div>
+                </div>
+
+                <!-- Fase 6 -->
+                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-amber-500/50 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">Fase 06</span>
+                            <span class="text-xs text-gray-400 font-mono">Semanas 13 - 16</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-white mb-2">Validación & Memoria</h4>
+                        <p class="text-gray-400 text-sm mb-4">Pruebas finales con feeds reales y preparación de la memoria técnica.</p>
+                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-amber-400 mr-2"></i>Pruebas de estrés y precisión del modelo IA.</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-amber-400 mr-2"></i>Redacción de Memoria Técnica / Informe Corporativo.</li>
+                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-amber-400 mr-2"></i>Preparación de presentación ejecutiva.</li>
+                        </ul>
+                    </div>
+                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
+                        Entregable: Memoria Académica & Defensa
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack Grid -->
+    <section id="stack" class="py-20 bg-[#060913]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Arquitectura Tecnológica</h2>
+                <h3 class="text-3xl md:text-4xl font-bold text-white">Stack 100% Open Source</h3>
+                <p class="text-gray-400 mt-2">Diseñado para ejecutarse íntegramente en local sin costes de licencia.</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="p-6 rounded-2xl bg-gray-900/40 border border-gray-800">
+                    <i data-lucide="code" class="w-8 h-8 text-cyan-400 mb-4"></i>
+                    <h5 class="text-white font-bold mb-2">Backend / API</h5>
+                    <p class="text-xs text-gray-400">Java 17+, Spring Boot, Spring Cloud Gateway, PostgreSQL, Apache Kafka</p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-gray-900/40 border border-gray-800">
+                    <i data-lucide="bot" class="w-8 h-8 text-blue-400 mb-4"></i>
+                    <h5 class="text-white font-bold mb-2">IA & ML Engine</h5>
+                    <p class="text-xs text-gray-400">Python 3.10+, Scikit-Learn, Ollama (Llama 3 / Mistral), Pandas</p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-gray-900/40 border border-gray-800">
+                    <i data-lucide="blocks" class="w-8 h-8 text-purple-400 mb-4"></i>
+                    <h5 class="text-white font-bold mb-2">Blockchain</h5>
+                    <p class="text-xs text-gray-400">Hyperledger Fabric, Chaincode (Go/Java), Fabric SDK Java</p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-gray-900/40 border border-gray-800">
+                    <i data-lucide="layout" class="w-8 h-8 text-emerald-400 mb-4"></i>
+                    <h5 class="text-white font-bold mb-2">Frontend & DevOps</h5>
+                    <p class="text-xs text-gray-400">React, Tailwind CSS, Recharts, Docker & Docker Compose, GitHub Actions</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Alineación Minsait / Indra -->
+    <section id="alineacion" class="py-20 bg-[#080d1a] border-t border-gray-800/40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-gray-900/60 border border-cyan-500/30 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
+                <div>
+                    <span class="inline-block px-3 py-1 bg-cyan-500/10 text-cyan-400 text-xs font-semibold rounded-full mb-3 border border-cyan-500/20">Alineación Estratégica 2026</span>
+                    <h3 class="text-2xl md:text-3xl font-bold text-white mb-4">Alineado con las prioridades de Minsait Cyber / Indra Group</h3>
+                    <p class="text-gray-300 text-sm max-w-2xl leading-relaxed">
+                        El diseño de VeriThreat responde directamente a las tendencias del sector para 2026: refuerzo de la ciberseguridad en la cadena de suministro, automatización de operaciones de seguridad en el SOC y adopción confiable de la IA en entornos corporativos altamente regulados.
+                    </p>
+                </div>
+                <div class="shrink-0">
+                    <a href="#fases" class="bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-bold px-6 py-3.5 rounded-xl transition-all shadow-lg shadow-cyan-500/20 flex items-center space-x-2">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
+                        <span>Ver Resumen de Planificación</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#04060d] border-t border-gray-800/80 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-xl font-bold text-white tracking-wider">VERI<span class="text-cyan-400">THREAT</span></span>
+            </div>
+            
+            <p class="text-xs text-gray-500 text-center">
+                VeriThreat – Blockchain and AI-Driven Threat Intelligence Exchange Framework © 2026. Proyecto Académico / Profesional.
+            </p>
+
+            <div class="flex items-center space-x-6 text-gray-400 text-xs">
+                <span class="hover:text-cyan-400 transition-colors cursor-pointer">Documentación API</span>
+                <span class="hover:text-cyan-400 transition-colors cursor-pointer">Memoria Técnica</span>
+                <span class="hover:text-cyan-400 transition-colors cursor-pointer">GitHub</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Lucide Icons Script Init -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
