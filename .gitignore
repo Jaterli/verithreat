@@ -14,4 +14,22 @@ psd
 thumb
 sketch
 
+### secretos ###
 .env
+.env.*
+
+### datos (no se versionan: CLAUDE.md, regla 1) ###
+# Fuentes descargadas, exportaciones de claude.ai y cualquier otro fichero de datos crudos
+ai/data/raw/
+# Muestras y resultados de VirusTotal, históricos y copias de trabajo
+*.csv
+
+### python ###
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+
+# Docs
+**/docs
+
+_*
