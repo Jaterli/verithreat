@@ -1,0 +1,23 @@
+Versiones: python 3.12.3 | scikit-learn 1.8.0 | pandas 3.0.2 | numpy 2.4.4 | tldextract 5.4.0
+Parámetros: semilla=0 | test=20% de los registrables | repeticiones=3 | modelo=HistGradientBoostingClassifier({'max_iter': 200, 'learning_rate': 0.1}) | top Tranco=50,000 | excluir registrable vacío=False
+
+CONJUNTO: 11,208 maliciosos (9,900 registrables únicos) y 49,767 no maliciosos
+  maliciosos por familia: {'phishtank': 5995, 'abusech': 3872, 'tweetfeed': 1341}
+  registrables con >10 hosts: 9 (117 hosts) | no maliciosos con registrable vacío: 1 | entradas en DOBLE_USO: 54
+
+PARTICIÓN por dominio registrable: 48,817 para entrenar y 12,158 para test (prevalencia de maliciosos en el test: 0.176; rasgos: 51)
+
+CURVA DE APRENDIZAJE (proporción natural de clases)
+  n_train=   100 (≈   25 maliciosos) | PR-AUC 0.440 ±0.022 | ROC-AUC 0.758
+  n_train=   300 (≈   64 maliciosos) | PR-AUC 0.644 ±0.037 | ROC-AUC 0.799
+  n_train=  1000 (≈  195 maliciosos) | PR-AUC 0.689 ±0.009 | ROC-AUC 0.821
+  n_train=  3000 (≈  562 maliciosos) | PR-AUC 0.724 ±0.005 | ROC-AUC 0.847
+  n_train= 10000 (≈ 1857 maliciosos) | PR-AUC 0.777 ±0.002 | ROC-AUC 0.885
+  n_train= 48817 (≈ 9063 maliciosos) | PR-AUC 0.802 ±0.000 | ROC-AUC 0.905
+
+GENERALIZACIÓN POR FAMILIA (entrena sin la familia; test = esa familia + no maliciosos del test)
+  fuera phishtank : test maliciosos  5995 | PR-AUC 0.918 (base 0.37) | ROC-AUC 0.923
+  fuera abusech   : test maliciosos  3872 | PR-AUC 0.685 (base 0.28) | ROC-AUC 0.794
+  fuera tweetfeed : test maliciosos  1341 | PR-AUC 0.634 (base 0.12) | ROC-AUC 0.845
+
+Tablas guardadas en resultados_ensayo/

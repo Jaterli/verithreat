@@ -32,6 +32,8 @@ verithreat/ai/
     cargadores_opcionales.py     cargadores de fuentes DESCARTADAS (MalwareBazaar, ThreatCluster); nada depende de él
     vt_muestreo.py               muestra reproducible + consulta a VirusTotal (reintentos, reanudación)
     extract_historic_blocklist.py   histórico propio de blocklist.de (en el chat: blocklist_historico.py)
+    ensayo_aprendizaje.py        ensayo del modelo A (curva de aprendizaje, generalización sin una fuente); referencia
+                                 en docs/ensayo_aprendizaje_referencia.txt
   notebooks/01_exploracion.ipynb         exploración, calidad, solapes, clase no maliciosa, esquema común, validación VT
   data/raw/                      CSV de las fuentes (NO se versionan)
 ```
@@ -76,8 +78,9 @@ Las exportaciones `recent` cubren pocos días y se regeneran cada pocos minutos.
    no por observaciones (solo 41 indicadores aparecen en dos familias).
 5. **Etiqueta del modelo (opción A)**: dominio malicioso vs no malicioso. Descartadas como etiqueta: confianza
    (depende del reportero), estado online (decae con la edad), familia (133 clases). Pasan a ser **reglas**.
-6. **Clase no maliciosa**: top 50.000 de Tranco menos 229 dominios que chocan con fuentes maliciosas y 43 de
-   doble uso → **49.766**. Maliciosos utilizables: **11.208** (≈9.900 registrables únicos). Entrenar **a nivel de
+6. **Clase no maliciosa**: top 50.000 de Tranco menos 228 dominios que chocan con fuentes maliciosas y 43 de
+   doble uso → **49.767** (decidido el 15-10-2026; antes 49.766 por un fallo: el registrable vacío de los hosts IP
+   descartaba `bet.br`, que es un sufijo público). Maliciosos utilizables: **11.208** (≈9.900 registrables únicos). Entrenar **a nivel de
    dominio** (host de las URLs).
 7. **Fuga de información**: el modelo solo usa rasgos calculables para un dominio desconocido (longitud, entropía,
    dígitos, guiones, subdominios, TLD). Fuente, reportero, tags, familia, confianza, nº de fuentes, antigüedad, estado
@@ -129,10 +132,14 @@ Las exportaciones `recent` cubren pocos días y se regeneran cada pocos minutos.
   TweetFeed ≈0,61 (≈1,00 corroborado / 0,94 malware-C2 / 0,60 phishing / 0,28 sin etiqueta); IPs individuales
   0,96 / 0,82 / 0,36 según IPsum; bloques /24 ≈0,41. Son pesos de **dominio/IP**; para URLs y hashes la evidencia
   (tabla) es más alta, pero con n=30–50 y sin decidir aún si se usan pesos distintos por tipo.
-- **Modelo A (ensayo rápido, gradient boosting)**: PR-AUC 0,44 con 100 registros → 0,72 con 3.000 → 0,80 con todos
-  (ROC-AUC 0,91; test con 17,6 % de maliciosos). Sin abuse.ch en el entrenamiento, ROC-AUC 0,79 (sin PhishTank 0,92,
+- **Modelo A (ensayo rápido, `ensayo_aprendizaje.py`, semilla 0)**: PR-AUC 0,44 con 100 registros → 0,64–0,65 con
+  300 → 0,72 con 3.000 → 0,78 con 10.000 (ROC-AUC 0,88) → 0,80 con todos (ROC-AUC 0,90; test de 12.158 con 17,6 % de
+  maliciosos). Sin abuse.ch en el entrenamiento, ROC-AUC 0,79 (sin PhishTank 0,92,
   sin TweetFeed 0,85): **la variedad pesa más que el volumen**. Un ensayo anterior daba 0,87 porque incluía
-  plataformas compartidas (inflaba el resultado).
+  plataformas compartidas (inflaba el resultado). Parámetros no obvios: `HistGradientBoostingClassifier(max_iter=200,
+  learning_rate=0.1)`, `GroupShuffleSplit` 80/20 por registrable, 3 repeticiones por tamaño, 51 rasgos (11 léxicos +
+  40 TLD one-hot elegidos sobre todo el conjunto: pequeña filtración que el modelo definitivo debe evitar). Semillas
+  1 y 2: PR-AUC con todos 0,80–0,81, mismo orden PhishTank > TweetFeed > abuse.ch. Las filas de 100–300 son frágiles.
 - **blocklist.de por DNS** (`bl.blocklist.de`, 200 IPs de `all.txt`): las 131 individuales tienen todas `Last-Attack`
   (mediana 26,7 h, siempre <48 h) y servicio coherente con las listas; las 69 de bloques no tienen fecha.
 - Las consultas a VirusTotal se hicieron el 13 y el 14 de octubre de 2026 (415 y 410); no se aprecia efecto del día.
@@ -150,6 +157,10 @@ VERITHREAT_DATA=../data/raw jupyter lab 01_exploracion.ipynb
 export VT_API_KEY=...
 python vt_muestreo.py --data-dir ../data/raw --solo-muestra
 python vt_muestreo.py --data-dir ../data/raw --pausa 1          # reanuda: solo consulta lo que falta
+
+# Ensayo del modelo A (sin red; necesita scikit-learn; referencia: sklearn 1.8.0, pandas 3.0.2, numpy 2.4.4,
+# tldextract 5.4.0). En otro equipo las métricas pueden variar ±0,003; el conjunto y la partición, no:
+python ensayo_aprendizaje.py --data-dir ../data/raw [--semilla 0] [--salida resultados_ensayo/]
 
 # Histórico de blocklist.de (ejecutar cada hora; --dns necesita dnspython):
 python extract_historic_blocklist.py --verificar 200 --solo-verificar --semilla 7
