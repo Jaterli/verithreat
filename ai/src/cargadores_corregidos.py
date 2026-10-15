@@ -5,7 +5,6 @@ Señal de fiabilidad:  IPsum (nivel = nº de listas en las que aparece una IP).
 Descartadas:          MalwareBazaar y ThreatCluster (ver cargadores_opcionales.py), OTX, Feodo, etc.
 """
 import ast
-import html
 import io
 import ipaddress
 import re
@@ -170,11 +169,22 @@ def load_ipsum(directorio) -> pd.DataFrame:
 
 
 # --------------------------------------------------------------------------- phishing y comunidad
+def deshacer_amp(url: str) -> str:
+    """Deshace "&amp;" (también el doble escape "&amp;amp;") y nada más.
+
+    html.unescape no sirve: convierte entidades sin «;» que son parámetros legítimos
+    («&regform=» -> «®form=», «&params=» -> «¶ms=»).
+    """
+    while "&amp;" in url:
+        url = url.replace("&amp;", "&")
+    return url
+
+
 def load_phishtank(path, ventana_dias=90) -> pd.DataFrame:
     """PhishTank trae histórico desde 2011: se marca como 'reciente' lo de los últimos `ventana_dias`."""
     df = pd.read_csv(path)
     df["url_raw"] = df["url"]
-    df["url"] = df["url"].map(html.unescape)  # "&amp;" -> "&"
+    df["url"] = df["url"].map(deshacer_amp)
     for c in ("submission_time", "verification_time"):
         df[c] = pd.to_datetime(df[c], utc=True, errors="coerce")
     df["host"] = df["url"].map(lambda u: (urlparse(u).hostname or "").lower())

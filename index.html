@@ -3,437 +3,823 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeriThreat | Threat Intelligence Exchange Framework</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>VeriThreat</title>
+    <meta name="description" content="VeriThreat: intercambio de Threat Intelligence entre organizaciones con IA explicable y blockchain permisionada. Roadmap del TFM y estado de la fase de datos.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com/3.4.5"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
+                    },
                     colors: {
-                        brand: {
-                            dark: '#0a0f1d',
-                            card: '#111827',
-                            border: '#1f2937',
-                            cyan: '#06b6d4',
-                            blue: '#3b82f6',
-                            accent: '#10b981'
-                        }
+                        ink: { 950: '#04060d', 900: '#060913', 850: '#080d1a', 800: '#0d1424' }
                     }
                 }
             }
         }
     </script>
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+    <style>
+        :root {
+            --bg: #060913;
+            --cyan: #22d3ee;
+            --blue: #3b82f6;
+            --violet: #a78bfa;
+            --red: #f87171;
+            --green: #34d399;
+        }
+        body { background: var(--bg); }
+        #red-nodos { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .capa { position: relative; z-index: 1; }
+        .vidrio { background: rgba(13, 20, 36, 0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .rejilla {
+            background-image: linear-gradient(rgba(34,211,238,.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(34,211,238,.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        /* Red neuronal del hero */
+        .nn-arista { stroke: rgba(148,163,184,.18); stroke-width: 1; }
+        .nn-arista.activa { stroke: var(--violet); stroke-opacity: .7; transition: stroke .3s; }
+        .nn-nodo { fill: #0d1424; stroke: rgba(167,139,250,.6); stroke-width: 1.5; transition: fill .3s; }
+        .nn-nodo.activo { fill: var(--violet); }
+        /* Cadena de bloques del roadmap */
+        .bloque-enlace { position: absolute; left: 27px; top: 64px; bottom: -24px; width: 2px;
+            background: repeating-linear-gradient(to bottom, rgba(148,163,184,.35) 0 6px, transparent 6px 12px); }
+        .bloque-enlace.hecho { background: linear-gradient(to bottom, var(--cyan), rgba(34,211,238,.2)); }
+        @keyframes latido { 0%,100% { box-shadow: 0 0 0 0 rgba(34,211,238,.45); } 50% { box-shadow: 0 0 0 10px rgba(34,211,238,0); } }
+        .latido { animation: latido 2.4s ease-in-out infinite; }
+        @keyframes barrido { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
+        .barrido::after { content: ''; position: absolute; inset: 0; width: 25%;
+            background: linear-gradient(90deg, transparent, rgba(34,211,238,.25), transparent); animation: barrido 2.8s linear infinite; }
+        .barra { transition: width 1.1s cubic-bezier(.2,.8,.2,1); }
+        #tooltip { position: fixed; z-index: 60; pointer-events: none; opacity: 0; transition: opacity .12s; }
+        @media (prefers-reduced-motion: reduce) {
+            .latido, .barrido::after { animation: none; }
+            .barra { transition: none; }
+            html { scroll-behavior: auto; }
+        }
+    </style>
 </head>
-<body class="bg-[#060913] text-gray-100 font-sans antialiased selection:bg-cyan-500 selection:text-white">
+<body class="text-slate-200 font-sans antialiased selection:bg-cyan-500/40 selection:text-white overflow-x-hidden">
 
-    <!-- Navbar -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-[#060913]/80 backdrop-blur-md border-b border-gray-800/60">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                    <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
-                </div>
-                <span class="text-2xl font-bold tracking-wider text-white">VERI<span class="text-cyan-400">THREAT</span></span>
-            </div>
-            
-            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-300">
-                <a href="#problema" class="hover:text-cyan-400 transition-colors">Desafío</a>
-                <a href="#solucion" class="hover:text-cyan-400 transition-colors">Solución</a>
-                <a href="#fases" class="hover:text-cyan-400 transition-colors">Fases del Proyecto</a>
-                <a href="#stack" class="hover:text-cyan-400 transition-colors">Stack Tecnológico</a>
-                <a href="#alineacion" class="hover:text-cyan-400 transition-colors">Alineación Estratégica</a>
+    <canvas id="red-nodos" aria-hidden="true"></canvas>
+    <div id="tooltip" class="vidrio border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono"></div>
+
+    <!-- Navegación -->
+    <header class="fixed top-0 inset-x-0 z-50 bg-ink-900/75 backdrop-blur-md border-b border-slate-800/70">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <a href="#inicio" class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+                </span>
+                <span class="text-xl font-bold tracking-wider text-white">VERI<span class="text-cyan-400">THREAT</span></span>
+            </a>
+            <nav class="hidden md:flex items-center gap-8 text-sm text-slate-300">
+                <a href="#arquitectura" class="hover:text-cyan-400 transition-colors">Arquitectura</a>
+                <a href="#roadmap" class="hover:text-cyan-400 transition-colors">Roadmap</a>
+                <a href="#fase1" class="hover:text-cyan-400 transition-colors">Fase 1</a>
+                <a href="#stack" class="hover:text-cyan-400 transition-colors">Stack</a>
             </nav>
-
-            <div class="flex items-center space-x-4">
-                <a href="#fases" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-all shadow-lg shadow-cyan-500/25">
-                    Ver Roadmap
-                </a>
-            </div>
+            <a href="#roadmap" class="text-sm font-semibold px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/25">
+                Ver roadmap
+            </a>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="relative pt-36 pb-20 md:pt-48 md:pb-32 overflow-hidden">
-        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent"></div>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            
-            <div class="inline-flex items-center space-x-2 bg-gray-800/80 border border-cyan-500/30 rounded-full px-4 py-1.5 text-xs text-cyan-300 mb-8 backdrop-blur-sm">
-                <span class="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                <span>Plataforma de Ciberinteligencia en Red</span>
-            </div>
+    <main class="capa">
 
-            <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white mb-6 leading-tight">
-                Inteligencia de Amenazas <br class="hidden sm:inline"/>
-                <span class="bg-gradient-to-r from-cyan-400 via-blue-400 to-teal-300 bg-clip-text text-transparent">Inmutable y Predictiva</span>
-            </h1>
-
-            <p class="max-w-3xl mx-auto text-lg md:text-xl text-gray-400 mb-10 leading-relaxed">
-                Plataforma descentralizada para el intercambio seguro y verificado de Indicadores de Compromiso (IOCs), respaldada por **Microservicios Java**, **Inteligencia Artificial** y **Hyperledger Fabric**.
-            </p>
-
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="#fases" class="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold px-8 py-4 rounded-xl shadow-xl shadow-cyan-500/20 hover:scale-105 transition-transform flex items-center justify-center space-x-2">
-                    <span>Explorar las 6 Fases</span>
-                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                </a>
-                <a href="#stack" class="w-full sm:w-auto bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-700 font-semibold px-8 py-4 rounded-xl transition-all flex items-center justify-center space-x-2">
-                    <i data-lucide="cpu" class="w-5 h-5 text-cyan-400"></i>
-                    <span>Ver Arquitectura</span>
-                </a>
-            </div>
-
-            <!-- Stats Bar -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-4xl mx-auto pt-8 border-t border-gray-800/80">
-                <div class="p-4 rounded-xl bg-gray-900/40 border border-gray-800">
-                    <p class="text-2xl font-bold text-cyan-400">0 €</p>
-                    <p class="text-xs text-gray-400">Coste de Licencias (100% Open Source)</p>
+    <!-- Hero -->
+    <section id="inicio" class="relative pt-32 pb-20 md:pt-40 md:pb-28">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(34,211,238,.12),_transparent_60%)]"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[1.1fr_.9fr] gap-12 items-center">
+            <div>
+                <div class="inline-flex items-center gap-2 vidrio border border-cyan-500/30 rounded-full px-4 py-1.5 text-xs text-cyan-300 mb-7">
+                    <span class="h-2 w-2 rounded-full bg-cyan-400 latido"></span>
+                    TFM · Fase 1 (datos y modelo de IA) en curso · octubre 2026
                 </div>
-                <div class="p-4 rounded-xl bg-gray-900/40 border border-gray-800">
-                    <p class="text-2xl font-bold text-blue-400">3 Capas</p>
-                    <p class="text-xs text-gray-400">Java + IA + Blockchain</p>
-                </div>
-                <div class="p-4 rounded-xl bg-gray-900/40 border border-gray-800">
-                    <p class="text-2xl font-bold text-emerald-400">100%</p>
-                    <p class="text-xs text-gray-400">Trazabilidad Inmutable</p>
-                </div>
-                <div class="p-4 rounded-xl bg-gray-900/40 border border-gray-800">
-                    <p class="text-2xl font-bold text-purple-400">Automático</p>
-                    <p class="text-xs text-gray-400">Scoring de Riesgo con IA</p>
-                </div>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- El Problema / Desafío -->
-    <section id="problema" class="py-20 bg-[#080d1a] border-t border-gray-800/40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center max-w-3xl mx-auto mb-16">
-                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">El Desafío Actual</h2>
-                <h3 class="text-3xl md:text-4xl font-bold text-white">¿Por qué las organizaciones necesitan VeriThreat?</h3>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-8">
-                <!-- Card 1 -->
-                <div class="p-8 rounded-2xl bg-gray-900/60 border border-gray-800 hover:border-red-500/40 transition-all group">
-                    <div class="w-12 h-12 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <i data-lucide="share-2" class="w-6 h-6"></i>
-                    </div>
-                    <h4 class="text-xl font-bold text-white mb-3">1. Inteligencia Fragmentada</h4>
-                    <p class="text-gray-400 text-sm leading-relaxed">
-                        Las empresas detectan amenazas (IPs, hashes, dominios) aisladamente sin mecanismos rápidos y seguros para compartirlos entre organizaciones socias.
-                    </p>
-                </div>
-
-                <!-- Card 2 -->
-                <div class="p-8 rounded-2xl bg-gray-900/60 border border-gray-800 hover:border-amber-500/40 transition-all group">
-                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <i data-lucide="shield-alert" class="w-6 h-6"></i>
-                    </div>
-                    <h4 class="text-xl font-bold text-white mb-3">2. Falta de Confianza en el Dato</h4>
-                    <p class="text-gray-400 text-sm leading-relaxed">
-                        Es complejo verificar la autenticidad, timestamp exacto y origen de los IOCs compartidos, corriendo el riesgo de inyectar datos falsos o duplicados.
-                    </p>
-                </div>
-
-                <!-- Card 3 -->
-                <div class="p-8 rounded-2xl bg-gray-900/60 border border-gray-800 hover:border-cyan-500/40 transition-all group">
-                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <i data-lucide="activity" class="w-6 h-6"></i>
-                    </div>
-                    <h4 class="text-xl font-bold text-white mb-3">3. Fatiga de Alertas en el SOC</h4>
-                    <p class="text-gray-400 text-sm leading-relaxed">
-                        El volumen masivo de alertas manuales sobrepasa la capacidad operativa de los analistas, ralentizando la respuesta ante ciberataques reales.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- La Solución -->
-    <section id="solucion" class="py-20 bg-[#060913]">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-gradient-to-r from-gray-900 via-gray-900/80 to-gray-900 border border-cyan-500/20 rounded-3xl p-8 md:p-12 relative overflow-hidden">
-                <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
-                
-                <div class="grid lg:grid-cols-2 gap-12 items-center relative z-10">
-                    <div>
-                        <span class="text-cyan-400 text-sm font-semibold tracking-wider uppercase mb-2 block">Propuesta de Valor</span>
-                        <h3 class="text-3xl md:text-4xl font-extrabold text-white mb-6">
-                            Una respuesta integral respaldada por tres pilares tecnológicos
-                        </h3>
-                        <div class="space-y-4">
-                            <div class="flex items-start space-x-4">
-                                <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 mt-1">
-                                    <i data-lucide="server" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <h5 class="text-lg font-semibold text-white">Microservicios en Java</h5>
-                                    <p class="text-gray-400 text-sm">Ingesta asíncrona, normalización y distribución mediante Spring Boot y Apache Kafka.</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start space-x-4">
-                                <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-1">
-                                    <i data-lucide="brain" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <h5 class="text-lg font-semibold text-white">Motor de IA & LLM Local</h5>
-                                    <p class="text-gray-400 text-sm">Scoring de riesgo automático con Scikit-Learn y síntesis de incidentes mediante Ollama (Llama 3).</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start space-x-4">
-                                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-1">
-                                    <i data-lucide="link" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <h5 class="text-lg font-semibold text-white">Blockchain Permisionada</h5>
-                                    <p class="text-gray-400 text-sm">Hyperledger Fabric registra el hash e historia inmutable de cada amenaza auditada.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-950 p-6 rounded-2xl border border-gray-800 shadow-2xl">
-                        <div class="flex items-center justify-between pb-4 border-b border-gray-800 mb-4">
-                            <span class="text-xs font-mono text-gray-400">IOC Threat Record #8942</span>
-                            <span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-semibold">VERIFICADO EN BLOCKCHAIN</span>
-                        </div>
-                        <div class="space-y-3 font-mono text-xs text-gray-300">
-                            <div><span class="text-gray-500">Indicador:</span> <span class="text-cyan-400">192.168.100.45 (IP Maliciosa)</span></div>
-                            <div><span class="text-gray-500">AI Risk Score:</span> <span class="text-red-400">8.9 / 10 (Severidad Alta)</span></div>
-                            <div><span class="text-gray-500">Resumen LLM:</span> "Actividad C2 detectada asociada a campaña de malware Ransomware."</div>
-                            <div><span class="text-gray-500">Ledger Hash:</span> <span class="text-gray-400">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span></div>
-                            <div><span class="text-gray-500">Organización Emisora:</span> SOC Partner Node Alpha</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Fases del Proyecto (Roadmap) -->
-    <section id="fases" class="py-20 bg-[#080d1a] border-t border-gray-800/40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center max-w-3xl mx-auto mb-16">
-                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Cronograma del Proyecto</h2>
-                <h3 class="text-3xl md:text-4xl font-bold text-white">Las 6 Fases de Desarrollo</h3>
-                <p class="text-gray-400 mt-3">Metodología modular estimada para un ciclo de desarrollo de 14 a 16 semanas.</p>
-            </div>
-
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                
-                <!-- Fase 1 -->
-                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-cyan-500/50 transition-all flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">Fase 01</span>
-                            <span class="text-xs text-gray-400 font-mono">Semanas 1 - 2</span>
-                        </div>
-                        <h4 class="text-xl font-bold text-white mb-2">Diseño y Modelado</h4>
-                        <p class="text-gray-400 text-sm mb-4">Definición de arquitectura en 5 capas y estandarización del esquema del dato.</p>
-                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-cyan-400 mr-2"></i>Modelo de datos estándar IOC (IPs, hashes, dominios).</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-cyan-400 mr-2"></i>Contratos de API REST/JSON inter-servicios.</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-cyan-400 mr-2"></i>Diagramas C4 de arquitectura.</li>
-                        </ul>
-                    </div>
-                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
-                        Entregable: Especificación de Arquitectura
-                    </div>
-                </div>
-
-                <!-- Fase 2 -->
-                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-blue-500/50 transition-all flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-xs font-bold text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">Fase 02</span>
-                            <span class="text-xs text-gray-400 font-mono">Semanas 3 - 4</span>
-                        </div>
-                        <h4 class="text-xl font-bold text-white mb-2">Dataset & Motor IA</h4>
-                        <p class="text-gray-400 text-sm mb-4">Preparación de datos abiertos y entrenamiento del modelo predictivo.</p>
-                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-blue-400 mr-2"></i>Ingesta OSINT (MISP, AlienVault, abuse.ch).</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-blue-400 mr-2"></i>Modelo Scikit-learn para scoring de riesgo.</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-blue-400 mr-2"></i>Integración LLM Ollama (Llama 3 local).</li>
-                        </ul>
-                    </div>
-                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
-                        Entregable: Pipeline de IA Evaluado
-                    </div>
-                </div>
-
-                <!-- Fase 3 -->
-                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-emerald-500/50 transition-all flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Fase 03</span>
-                            <span class="text-xs text-gray-400 font-mono">Semanas 5 - 7</span>
-                        </div>
-                        <h4 class="text-xl font-bold text-white mb-2">Backend Microservicios</h4>
-                        <p class="text-gray-400 text-sm mb-4">Construcción del núcleo distribuido en Java para el procesamiento de datos.</p>
-                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mr-2"></i>Spring Boot 3 & Spring Cloud Gateway.</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mr-2"></i>Persistencia PostgreSQL + Mensajería Kafka.</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mr-2"></i>Orquestación completa con Docker Compose.</li>
-                        </ul>
-                    </div>
-                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
-                        Entregable: Cluster de Microservicios Functional
-                    </div>
-                </div>
-
-                <!-- Fase 4 -->
-                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-purple-500/50 transition-all flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-xs font-bold text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">Fase 04</span>
-                            <span class="text-xs text-gray-400 font-mono">Semanas 8 - 10</span>
-                        </div>
-                        <h4 class="text-xl font-bold text-white mb-2">Red Blockchain</h4>
-                        <p class="text-gray-400 text-sm mb-4">Red permisionada para auditoría e inmutabilidad descentralizada.</p>
-                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-purple-400 mr-2"></i>Despliegue Hyperledger Fabric (2-3 nodos).</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-purple-400 mr-2"></i>Desarrollo Chaincode (Go/Java) para registro.</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-purple-400 mr-2"></i>Conexión vía Fabric SDK para Java.</li>
-                        </ul>
-                    </div>
-                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
-                        Entregable: Red Fabric & Chaincode Desplegados
-                    </div>
-                </div>
-
-                <!-- Fase 5 -->
-                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-pink-500/50 transition-all flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-xs font-bold text-pink-400 bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20">Fase 05</span>
-                            <span class="text-xs text-gray-400 font-mono">Semanas 11 - 12</span>
-                        </div>
-                        <h4 class="text-xl font-bold text-white mb-2">Frontend SOC & E2E</h4>
-                        <p class="text-gray-400 text-sm mb-4">Interfaz web para analistas e integración completa de componentes.</p>
-                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-pink-400 mr-2"></i>Dashboard interactivo React + Tailwind CSS.</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-pink-400 mr-2"></i>Visualización gráfica de alertas (Recharts).</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-pink-400 mr-2"></i>Comprobador visual de validación en Blockchain.</li>
-                        </ul>
-                    </div>
-                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
-                        Entregable: MVP Completo Operativo
-                    </div>
-                </div>
-
-                <!-- Fase 6 -->
-                <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative hover:border-amber-500/50 transition-all flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">Fase 06</span>
-                            <span class="text-xs text-gray-400 font-mono">Semanas 13 - 16</span>
-                        </div>
-                        <h4 class="text-xl font-bold text-white mb-2">Validación & Memoria</h4>
-                        <p class="text-gray-400 text-sm mb-4">Pruebas finales con feeds reales y preparación de la memoria técnica.</p>
-                        <ul class="text-xs text-gray-300 space-y-2 mb-6">
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-amber-400 mr-2"></i>Pruebas de estrés y precisión del modelo IA.</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-amber-400 mr-2"></i>Redacción de Memoria Técnica / Informe Corporativo.</li>
-                            <li class="flex items-center"><i data-lucide="check" class="w-4 h-4 text-amber-400 mr-2"></i>Preparación de presentación ejecutiva.</li>
-                        </ul>
-                    </div>
-                    <div class="pt-4 border-t border-gray-800/60 text-xs text-gray-500">
-                        Entregable: Memoria Académica & Defensa
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- Tech Stack Grid -->
-    <section id="stack" class="py-20 bg-[#060913]">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center max-w-3xl mx-auto mb-16">
-                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Arquitectura Tecnológica</h2>
-                <h3 class="text-3xl md:text-4xl font-bold text-white">Stack 100% Open Source</h3>
-                <p class="text-gray-400 mt-2">Diseñado para ejecutarse íntegramente en local sin costes de licencia.</p>
-            </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div class="p-6 rounded-2xl bg-gray-900/40 border border-gray-800">
-                    <i data-lucide="code" class="w-8 h-8 text-cyan-400 mb-4"></i>
-                    <h5 class="text-white font-bold mb-2">Backend / API</h5>
-                    <p class="text-xs text-gray-400">Java 17+, Spring Boot, Spring Cloud Gateway, PostgreSQL, Apache Kafka</p>
-                </div>
-
-                <div class="p-6 rounded-2xl bg-gray-900/40 border border-gray-800">
-                    <i data-lucide="bot" class="w-8 h-8 text-blue-400 mb-4"></i>
-                    <h5 class="text-white font-bold mb-2">IA & ML Engine</h5>
-                    <p class="text-xs text-gray-400">Python 3.10+, Scikit-Learn, Ollama (Llama 3 / Mistral), Pandas</p>
-                </div>
-
-                <div class="p-6 rounded-2xl bg-gray-900/40 border border-gray-800">
-                    <i data-lucide="blocks" class="w-8 h-8 text-purple-400 mb-4"></i>
-                    <h5 class="text-white font-bold mb-2">Blockchain</h5>
-                    <p class="text-xs text-gray-400">Hyperledger Fabric, Chaincode (Go/Java), Fabric SDK Java</p>
-                </div>
-
-                <div class="p-6 rounded-2xl bg-gray-900/40 border border-gray-800">
-                    <i data-lucide="layout" class="w-8 h-8 text-emerald-400 mb-4"></i>
-                    <h5 class="text-white font-bold mb-2">Frontend & DevOps</h5>
-                    <p class="text-xs text-gray-400">React, Tailwind CSS, Recharts, Docker & Docker Compose, GitHub Actions</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Alineación Minsait / Indra -->
-    <section id="alineacion" class="py-20 bg-[#080d1a] border-t border-gray-800/40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-gray-900/60 border border-cyan-500/30 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
-                <div>
-                    <span class="inline-block px-3 py-1 bg-cyan-500/10 text-cyan-400 text-xs font-semibold rounded-full mb-3 border border-cyan-500/20">Alineación Estratégica 2026</span>
-                    <h3 class="text-2xl md:text-3xl font-bold text-white mb-4">Alineado con las prioridades de Minsait Cyber / Indra Group</h3>
-                    <p class="text-gray-300 text-sm max-w-2xl leading-relaxed">
-                        El diseño de VeriThreat responde directamente a las tendencias del sector para 2026: refuerzo de la ciberseguridad en la cadena de suministro, automatización de operaciones de seguridad en el SOC y adopción confiable de la IA en entornos corporativos altamente regulados.
-                    </p>
-                </div>
-                <div class="shrink-0">
-                    <a href="#fases" class="bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-bold px-6 py-3.5 rounded-xl transition-all shadow-lg shadow-cyan-500/20 flex items-center space-x-2">
-                        <i data-lucide="file-text" class="w-5 h-5"></i>
-                        <span>Ver Resumen de Planificación</span>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.08] mb-6">
+                    Threat Intelligence<br>
+                    <span class="bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent">verificable y explicable</span>
+                </h1>
+                <p class="text-lg text-slate-400 leading-relaxed max-w-xl mb-9">
+                    Una red de organizaciones que comparte indicadores de compromiso (dominios, URLs, hashes, IPs).
+                    Un <strong class="text-violet-300 font-medium">modelo de IA</strong> aprende a distinguir lo malicioso
+                    y puntúa su riesgo, y una <strong class="text-cyan-300 font-medium">blockchain permisionada</strong>
+                    registra el origen de cada indicador.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="#fase1" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold shadow-xl shadow-cyan-500/20 hover:scale-[1.03] transition-transform">
+                        Cómo se ha hecho la fase 1 <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#arquitectura" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl vidrio border border-slate-700 text-slate-200 font-semibold hover:border-cyan-500/50 transition-colors">
+                        <i data-lucide="network" class="w-5 h-5 text-cyan-400"></i> Arquitectura
                     </a>
                 </div>
             </div>
+
+            <!-- Panel IA: red neuronal + clasificador -->
+            <div class="min-w-0 vidrio border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-2xl shadow-violet-900/20">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <span class="flex items-start gap-2 min-w-0 text-xs font-mono text-slate-400">
+                        <i data-lucide="brain" class="w-4 h-4 text-violet-400 shrink-0"></i><span>modelo_A · dominio malicioso vs no malicioso</span>
+                    </span>
+                    <span class="shrink-0 text-[10px] uppercase tracking-wider text-slate-500 border border-slate-700 rounded px-2 py-0.5">ilustrativo</span>
+                </div>
+                <svg id="nn" viewBox="0 0 360 170" class="w-full h-auto" role="img" aria-label="Esquema de red neuronal: seis rasgos léxicos del dominio entran al modelo y producen una probabilidad de que sea malicioso"></svg>
+                <div class="mt-4 rounded-xl bg-ink-950/80 border border-slate-800 p-3 sm:p-4 font-mono text-[11px] sm:text-xs space-y-2" aria-live="polite">
+                    <div class="flex justify-between gap-3"><span class="shrink-0 text-slate-500">dominio</span><span id="clf-dominio" class="min-w-0 text-right break-all text-cyan-300">—</span></div>
+                    <div class="flex justify-between gap-3"><span class="shrink-0 text-slate-500">rasgos</span><span id="clf-rasgos" class="min-w-0 text-right text-slate-300">—</span></div>
+                    <div class="flex justify-between items-center gap-3">
+                        <span class="shrink-0 text-slate-500">P(malicioso)</span>
+                        <span class="flex flex-1 min-w-0 items-center justify-end gap-2">
+                            <span class="flex-1 min-w-0 max-w-[8rem] h-1.5 rounded-full bg-slate-800 overflow-hidden"><span id="clf-barra" class="block h-full rounded-full barra" style="width:0"></span></span>
+                            <span id="clf-p" class="shrink-0 text-slate-200 w-9 text-right">—</span>
+                        </span>
+                    </div>
+                    <div class="flex justify-between gap-3"><span class="shrink-0 text-slate-500">veredicto</span><span id="clf-veredicto" class="min-w-0 text-right text-slate-300">—</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cifras reales de la fase 1 -->
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="vidrio border border-slate-800 rounded-xl p-4">
+                    <p class="text-2xl sm:text-3xl font-bold text-white">74.884</p>
+                    <p class="text-xs text-slate-400 mt-1">indicadores únicos unificados de 5 fuentes</p>
+                </div>
+                <div class="vidrio border border-slate-800 rounded-xl p-4">
+                    <p class="text-2xl sm:text-3xl font-bold text-white">825</p>
+                    <p class="text-xs text-slate-400 mt-1">indicadores contrastados con VirusTotal</p>
+                </div>
+                <div class="vidrio border border-slate-800 rounded-xl p-4">
+                    <p class="text-2xl sm:text-3xl font-bold text-white">0,91</p>
+                    <p class="text-xs text-slate-400 mt-1">ROC-AUC del primer ensayo del modelo</p>
+                </div>
+                <div class="vidrio border border-slate-800 rounded-xl p-4">
+                    <p class="text-2xl sm:text-3xl font-bold text-white">0 €</p>
+                    <p class="text-xs text-slate-400 mt-1">en licencias: stack open source y en local</p>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="bg-[#04060d] border-t border-gray-800/80 py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center">
-                    <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+    <!-- Problema -->
+    <section class="py-20 bg-ink-850/80 border-y border-slate-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-12">
+                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">El problema</h2>
+                <p class="text-3xl md:text-4xl font-bold text-white">Compartir inteligencia de amenazas sin poder fiarse del dato no sirve de mucho</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="vidrio p-7 rounded-2xl border border-slate-800 hover:border-red-400/40 transition-colors">
+                    <i data-lucide="share-2" class="w-7 h-7 text-red-400 mb-5"></i>
+                    <h3 class="text-lg font-semibold text-white mb-2">Inteligencia fragmentada</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Cada organización detecta IPs, dominios y hashes por su cuenta y no hay un canal ágil y seguro para compartirlos.</p>
                 </div>
-                <span class="text-xl font-bold text-white tracking-wider">VERI<span class="text-cyan-400">THREAT</span></span>
+                <div class="vidrio p-7 rounded-2xl border border-slate-800 hover:border-amber-400/40 transition-colors">
+                    <i data-lucide="shield-alert" class="w-7 h-7 text-amber-400 mb-5"></i>
+                    <h3 class="text-lg font-semibold text-white mb-2">Fuentes de fiabilidad desigual</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">No todos los feeds aciertan igual: en nuestra validación, entre el 59 % y el 97 % de los dominios reportados se confirman, según la fuente.</p>
+                </div>
+                <div class="vidrio p-7 rounded-2xl border border-slate-800 hover:border-cyan-400/40 transition-colors">
+                    <i data-lucide="activity" class="w-7 h-7 text-cyan-400 mb-5"></i>
+                    <h3 class="text-lg font-semibold text-white mb-2">Fatiga de alertas</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">El SOC necesita priorizar con un score de riesgo coherente y que se pueda explicar, no una lista plana de miles de alertas.</p>
+                </div>
             </div>
-            
-            <p class="text-xs text-gray-500 text-center">
-                VeriThreat – Blockchain and AI-Driven Threat Intelligence Exchange Framework © 2026. Proyecto Académico / Profesional.
-            </p>
+        </div>
+    </section>
 
-            <div class="flex items-center space-x-6 text-gray-400 text-xs">
-                <span class="hover:text-cyan-400 transition-colors cursor-pointer">Documentación API</span>
-                <span class="hover:text-cyan-400 transition-colors cursor-pointer">Memoria Técnica</span>
-                <span class="hover:text-cyan-400 transition-colors cursor-pointer">GitHub</span>
+    <!-- Arquitectura -->
+    <section id="arquitectura" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-12">
+                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Arquitectura</h2>
+                <p class="text-3xl md:text-4xl font-bold text-white">Del feed al analista, con cada paso trazado</p>
+                <p class="text-slate-400 mt-3">Cada componente del score se guarda por separado, para que se pueda explicar por qué un indicador tiene la severidad que tiene.</p>
             </div>
+
+            <ol class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <li class="vidrio relative rounded-2xl border border-slate-800 p-5">
+                    <span class="font-mono text-[11px] text-slate-500">01</span>
+                    <i data-lucide="radar" class="w-7 h-7 text-slate-300 my-3"></i>
+                    <h3 class="font-semibold text-white">Feeds OSINT</h3>
+                    <p class="text-xs text-slate-400 mt-1">abuse.ch, PhishTank, TweetFeed, blocklist.de, IPsum.</p>
+                </li>
+                <li class="vidrio relative rounded-2xl border border-slate-800 p-5">
+                    <span class="font-mono text-[11px] text-slate-500">02</span>
+                    <i data-lucide="server" class="w-7 h-7 text-blue-400 my-3"></i>
+                    <h3 class="font-semibold text-white">Ingesta Java</h3>
+                    <p class="text-xs text-slate-400 mt-1">Spring Boot normaliza y guarda indicadores y observaciones en PostgreSQL.</p>
+                </li>
+                <li class="vidrio relative rounded-2xl border border-violet-500/40 p-5">
+                    <span class="font-mono text-[11px] text-slate-500">03</span>
+                    <i data-lucide="brain" class="w-7 h-7 text-violet-400 my-3"></i>
+                    <h3 class="font-semibold text-white">Motor de IA</h3>
+                    <p class="text-xs text-slate-400 mt-1">scikit-learn puntúa el riesgo; reglas ponderan la fiabilidad de cada fuente. Resumen opcional con Ollama.</p>
+                </li>
+                <li class="vidrio relative rounded-2xl border border-cyan-500/40 p-5">
+                    <span class="font-mono text-[11px] text-slate-500">04</span>
+                    <i data-lucide="blocks" class="w-7 h-7 text-cyan-400 my-3"></i>
+                    <h3 class="font-semibold text-white">Hyperledger Fabric</h3>
+                    <p class="text-xs text-slate-400 mt-1">2–3 nodos registran hash y procedencia: tipo + valor + fuente + timestamp.</p>
+                </li>
+                <li class="vidrio relative rounded-2xl border border-slate-800 p-5">
+                    <span class="font-mono text-[11px] text-slate-500">05</span>
+                    <i data-lucide="layout-dashboard" class="w-7 h-7 text-emerald-400 my-3"></i>
+                    <h3 class="font-semibold text-white">Dashboard SOC</h3>
+                    <p class="text-xs text-slate-400 mt-1">React + Recharts: alertas priorizadas y verificación en la cadena.</p>
+                </li>
+            </ol>
+        </div>
+    </section>
+
+    <!-- Roadmap como cadena de bloques -->
+    <section id="roadmap" class="py-20 bg-ink-850/80 border-y border-slate-800/50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-12">
+                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Roadmap</h2>
+                <p class="text-3xl md:text-4xl font-bold text-white">Seis fases, encadenadas como bloques</p>
+                <p class="text-slate-400 mt-3">Cada bloque lleva el hash SHA-256 del anterior (se calcula en tu navegador). La fase de datos se adelantó a las demás porque el resto del sistema depende de qué fuentes y qué esquema se usan.</p>
+            </div>
+
+            <ol id="cadena" class="space-y-6"></ol>
+        </div>
+    </section>
+
+    <!-- Fase 1 en detalle -->
+    <section id="fase1" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-14">
+                <h2 class="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">Fase 1 · Datos, fiabilidad y modelo de IA</h2>
+                <p class="text-3xl md:text-4xl font-bold text-white">Cómo se ha construido el conjunto con el que aprende la IA</p>
+                <p class="text-slate-400 mt-3">Para que un modelo aprenda a detectar lo malicioso hacen falta ejemplos de los dos lados y saber cuánto fiarse de cada uno. Estos son los seis pasos completados hasta hoy.</p>
+            </div>
+
+            <div class="space-y-8">
+
+                <!-- Paso 1 -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-slate-800 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 1 · HECHO</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">Selección de fuentes</h3>
+                        <p class="text-sm text-slate-400 mt-2">Se analizaron más de quince feeds y se quedaron los que aportan variedad sin duplicar.</p>
+                    </header>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">Se usan</p>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">ThreatFox</span><span class="text-slate-400">IOCs mixtos, familia y C2</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">URLhaus</span><span class="text-slate-400">URLs de malware, estado online</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">PhishTank</span><span class="text-slate-400">phishing verificado</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">TweetFeed</span><span class="text-slate-400">IOCs de investigadores, con reportero</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">blocklist.de</span><span class="text-slate-400">IPs que atacan servicios (48 h)</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-violet-300 w-28 shrink-0">IPsum</span><span class="text-slate-400">señal: en cuántas listas aparece una IP</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-emerald-300 w-28 shrink-0">Tranco</span><span class="text-slate-400">base de la clase no maliciosa</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">Se descartan, con motivo</p>
+                            <ul class="space-y-2 text-sm text-slate-400">
+                                <li><span class="text-slate-300">MalwareBazaar</span>: solo hashes, poco solape.</li>
+                                <li><span class="text-slate-300">ThreatCluster</span>: 1,7 % de los indicadores, falsos positivos de extracción.</li>
+                                <li><span class="text-slate-300">Feodo Tracker</span>: vacío tras los derribos.</li>
+                                <li><span class="text-slate-300">MISP / OTX</span>: duplican abuse.ch.</li>
+                                <li><span class="text-slate-300">Filtro de Bloom de CIRCL</span>: «conocido» no es «benigno».</li>
+                                <li><span class="text-slate-300">Spamhaus, FireHOL, C2IntelFeeds…</span>: sin hueco medible.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Paso 2 -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-slate-800 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 2 · HECHO</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">Limpieza y esquema común</h3>
+                        <p class="text-sm text-slate-400 mt-2">Cada fuente trae su formato. Se unifican en un <strong class="text-slate-200 font-medium">indicador</strong> único <span class="font-mono text-xs">(tipo, valor)</span> con una o varias <strong class="text-slate-200 font-medium">observaciones</strong> por fuente.</p>
+                        <ul class="mt-4 space-y-2 text-xs text-slate-400">
+                            <li class="flex gap-2"><i data-lucide="filter" class="w-4 h-4 text-cyan-400 shrink-0"></i><span>Lista <span class="font-mono">DOBLE_USO</span>: GitHub, Dropbox, acortadores… no se etiquetan como dominio malicioso.</span></li>
+                            <li class="flex gap-2"><i data-lucide="boxes" class="w-4 h-4 text-cyan-400 shrink-0"></i><span>30 bloques /24 de blocklist.de (7.680 IPs) se tratan como un único indicador <span class="font-mono">cidr</span>, no como ataques individuales.</span></li>
+                        </ul>
+                    </header>
+                    <figure>
+                        <figcaption class="flex items-baseline justify-between mb-4">
+                            <span class="text-sm font-medium text-slate-200">Indicadores únicos por tipo</span>
+                            <span class="text-xs text-slate-500">75.511 observaciones → 74.884 indicadores</span>
+                        </figcaption>
+                        <div id="graf-tipos" class="space-y-2.5"></div>
+                    </figure>
+                </article>
+
+                <!-- Paso 3 -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-slate-800 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 3 · HECHO</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">Las dos clases para entrenar</h3>
+                        <p class="text-sm text-slate-400 mt-2">La etiqueta elegida es <em>dominio malicioso frente a no malicioso</em>. La confianza, el estado online o la familia no sirven como etiqueta (dependen del reportero o caducan) y pasan a ser reglas.</p>
+                    </header>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div class="rounded-xl border border-red-400/30 bg-red-500/5 p-5">
+                            <p class="text-xs uppercase tracking-wider text-red-300 mb-2">Clase maliciosa</p>
+                            <p class="text-3xl font-bold text-white">11.208</p>
+                            <p class="text-sm text-slate-400 mt-1">dominios utilizables (≈9.900 registrables únicos), tomados del host de las URLs.</p>
+                        </div>
+                        <div class="rounded-xl border border-emerald-400/30 bg-emerald-500/5 p-5">
+                            <p class="text-xs uppercase tracking-wider text-emerald-300 mb-2">Clase no maliciosa</p>
+                            <p class="text-3xl font-bold text-white">49.766</p>
+                            <p class="text-sm text-slate-400 mt-1">top 50.000 de Tranco, menos 229 que chocan con fuentes maliciosas y 43 de doble uso.</p>
+                        </div>
+                        <div class="sm:col-span-2 rounded-xl border border-slate-800 bg-ink-950/60 p-4 text-sm text-slate-400 flex gap-3">
+                            <i data-lucide="lock" class="w-5 h-5 text-violet-400 shrink-0 mt-0.5"></i>
+                            <p><span class="text-slate-200">Sin fuga de información:</span> el modelo solo ve rasgos que se pueden calcular para un dominio que nunca ha visto (longitud, entropía, dígitos, guiones, subdominios, TLD). Fuente, reportero, familia o nº de fuentes se quedan para las reglas.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Paso 4 -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-slate-800 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 4 · HECHO</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">Validación con VirusTotal</h3>
+                        <p class="text-sm text-slate-400 mt-2">Muestra reproducible de 825 indicadores (semilla 42), consultada el 13 y 14 de octubre de 2026: 818 conocidos y 7 sin analizar. Se considera confirmado con ≥3 motores; con uno solo hay demasiado ruido.</p>
+                        <p class="text-xs text-slate-500 mt-4">Grupos de URLs y hashes pequeños (n = 30–50): margen de ±10–15 puntos.</p>
+                    </header>
+                    <figure>
+                        <figcaption class="flex items-baseline justify-between mb-4 gap-4">
+                            <span class="text-sm font-medium text-slate-200">Indicadores con ≥3 detecciones, por grupo</span>
+                            <span class="text-xs text-slate-500">pasa el ratón para ver n y cobertura</span>
+                        </figcaption>
+                        <div id="graf-vt" class="space-y-2"></div>
+                    </figure>
+                </article>
+
+                <!-- Paso 5 -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-slate-800 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 5 · HECHO</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">Pesos de fiabilidad</h3>
+                        <p class="text-sm text-slate-400 mt-2">De la validación salen pesos <strong class="text-slate-200 font-medium">preliminares y configurables</strong> para las reglas del score. La misma fuente se gradúa según señales propias.</p>
+                    </header>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">TweetFeed, según etiqueta (dominios, ≥3 det.)</p>
+                            <div id="graf-tweetfeed" class="space-y-2"></div>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">IPs de blocklist.de, según listas de IPsum</p>
+                            <div id="graf-ipsum" class="space-y-2"></div>
+                            <p class="text-xs text-slate-500 mt-3">Correlación de Spearman 0,71.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Paso 6 -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-violet-500/30 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 6 · HECHO</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">Primer ensayo del modelo</h3>
+                        <p class="text-sm text-slate-400 mt-2">Gradient boosting sobre rasgos léxicos del dominio. El test tiene un 17,6 % de maliciosos, así que la métrica principal es PR-AUC.</p>
+                        <p class="text-sm text-violet-200 mt-4 border-l-2 border-violet-400 pl-3">La variedad de fuentes pesa más que el volumen.</p>
+                    </header>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">PR-AUC según registros de entrenamiento</p>
+                            <div class="flex items-end gap-3 h-40" id="graf-curva" role="img" aria-label="PR-AUC 0,44 con 100 registros, 0,72 con 3.000 y 0,80 con todos"></div>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">ROC-AUC al quitar una fuente del entrenamiento</p>
+                            <div id="graf-ablacion" class="space-y-2"></div>
+                            <p class="text-xs text-slate-500 mt-3">Un ensayo previo daba 0,87 porque incluía plataformas compartidas; al quitarlas, el resultado es más honesto.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Pendiente dentro de la fase -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="rounded-2xl border border-dashed border-slate-700 p-6">
+                        <p class="flex items-center gap-2 text-xs font-mono text-amber-300 mb-3"><i data-lucide="clock" class="w-4 h-4"></i> QUEDA EN LA FASE 1</p>
+                        <ul class="space-y-2 text-sm text-slate-400">
+                            <li class="flex gap-2"><i data-lucide="circle-dashed" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>Entrenamiento definitivo con partición por campaña y por tiempo, y probabilidad calibrada.</li>
+                            <li class="flex gap-2"><i data-lucide="circle-dashed" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>Fórmula de severidad: reglas + pesos, cada componente guardado aparte.</li>
+                            <li class="flex gap-2"><i data-lucide="circle-dashed" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>API de scoring y resumen de alertas con LLM local (Ollama).</li>
+                            <li class="flex gap-2"><i data-lucide="circle-dashed" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>Decidir si URLs y hashes llevan pesos distintos a los de dominios e IPs.</li>
+                        </ul>
+                    </div>
+                    <div class="rounded-2xl border border-dashed border-slate-700 p-6">
+                        <p class="flex items-center gap-2 text-xs font-mono text-slate-400 mb-3"><i data-lucide="flask-conical" class="w-4 h-4"></i> HIPÓTESIS AÚN SIN VERIFICAR</p>
+                        <ul class="space-y-2 text-sm text-slate-400">
+                            <li>Términos de uso de la mayoría de fuentes (solo se han leído los de TweetFeed).</li>
+                            <li>md5/sha1 y las IPs de ThreatFox y TweetFeed, sin validar con VirusTotal.</li>
+                            <li>Que los hashes de TweetFeed con 0 detecciones sean benignos y no malware sin detectar.</li>
+                            <li>Qué lista de IPsum contiene los bloques /24 de blocklist.de.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stack -->
+    <section id="stack" class="py-20 bg-ink-850/80 border-t border-slate-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-12">
+                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Stack</h2>
+                <p class="text-3xl md:text-4xl font-bold text-white">Open source y ejecutable en local</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="vidrio p-6 rounded-2xl border border-violet-500/30">
+                    <i data-lucide="bot" class="w-7 h-7 text-violet-400 mb-4"></i>
+                    <h3 class="text-white font-semibold mb-2">IA y datos <span class="ml-1 text-[10px] font-mono text-emerald-300 border border-emerald-400/40 rounded px-1.5 py-0.5 align-middle">EN USO</span></h3>
+                    <p class="text-xs text-slate-400">Python, pandas, scikit-learn, tldextract, dnspython, Jupyter, API v3 de VirusTotal, Ollama.</p>
+                </div>
+                <div class="vidrio p-6 rounded-2xl border border-slate-800">
+                    <i data-lucide="code-2" class="w-7 h-7 text-blue-400 mb-4"></i>
+                    <h3 class="text-white font-semibold mb-2">Backend</h3>
+                    <p class="text-xs text-slate-400">Java 17, Spring Boot, Spring Cloud Gateway, PostgreSQL, Kafka o RabbitMQ (opcional).</p>
+                </div>
+                <div class="vidrio p-6 rounded-2xl border border-slate-800">
+                    <i data-lucide="blocks" class="w-7 h-7 text-cyan-400 mb-4"></i>
+                    <h3 class="text-white font-semibold mb-2">Blockchain</h3>
+                    <p class="text-xs text-slate-400">Hyperledger Fabric (2–3 nodos), chaincode en Go o Java, Fabric SDK for Java.</p>
+                </div>
+                <div class="vidrio p-6 rounded-2xl border border-slate-800">
+                    <i data-lucide="layout-dashboard" class="w-7 h-7 text-emerald-400 mb-4"></i>
+                    <h3 class="text-white font-semibold mb-2">Frontend y DevOps</h3>
+                    <p class="text-xs text-slate-400">React, Tailwind CSS, Recharts, Docker Compose, GitHub Actions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    </main>
+
+    <footer class="capa bg-ink-950 border-t border-slate-800/80 py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-white"></i>
+                </span>
+                <span class="text-lg font-bold text-white tracking-wider">VERI<span class="text-cyan-400">THREAT</span></span>
+            </div>
+            <p class="text-xs text-slate-500 text-center">Trabajo Fin de Máster · Full Stack + Blockchain · 2026. Cifras de la fase de datos a 15 de octubre de 2026.</p>
+            <p class="text-xs text-slate-400">Desarrollado por <a href="https://jaterli.com" target="_blank" rel="noopener" class="text-cyan-400 hover:text-cyan-300 underline-offset-4 hover:underline">Jaterli</a></p>
         </div>
     </footer>
 
-    <!-- Lucide Icons Script Init -->
     <script>
+    (function () {
+        'use strict';
+        const reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const fmt = new Intl.NumberFormat('es-ES');
+        const pct = (v) => fmt.format(v) + ' %';
+
+        /* ---------- Fondo: red de nodos tipo blockchain ---------- */
+        const lienzo = document.getElementById('red-nodos');
+        const ctx = lienzo.getContext('2d');
+        let nodos = [], paquetes = [], ancho = 0, alto = 0, dpr = 1;
+        const DIST = 150;
+
+        function redimensionar() {
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            ancho = window.innerWidth; alto = window.innerHeight;
+            lienzo.width = ancho * dpr; lienzo.height = alto * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            const n = Math.min(95, Math.round((ancho * alto) / 15000));
+            nodos = Array.from({ length: n }, () => ({
+                x: Math.random() * ancho, y: Math.random() * alto,
+                vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25,
+                r: Math.random() < .12 ? 3.2 : 1.8,
+                marca: 0, color: null
+            }));
+            if (reducirMovimiento) dibujar();
+        }
+
+        function vecinos(i) {
+            const a = nodos[i], res = [];
+            for (let j = 0; j < nodos.length; j++) {
+                if (j === i) continue;
+                const b = nodos[j];
+                if (Math.hypot(a.x - b.x, a.y - b.y) < DIST) res.push(j);
+            }
+            return res;
+        }
+
+        function lanzarPaquete() {
+            if (!nodos.length) return;
+            const i = Math.floor(Math.random() * nodos.length);
+            const v = vecinos(i);
+            if (!v.length) return;
+            paquetes.push({ de: i, a: v[Math.floor(Math.random() * v.length)], t: 0 });
+        }
+
+        function clasificarNodo() {
+            const n = nodos[Math.floor(Math.random() * nodos.length)];
+            if (!n) return;
+            n.marca = 1;
+            n.color = Math.random() < .3 ? '248,113,113' : '52,211,153';
+        }
+
+        function dibujar() {
+            ctx.clearRect(0, 0, ancho, alto);
+            for (let i = 0; i < nodos.length; i++) {
+                const a = nodos[i];
+                for (let j = i + 1; j < nodos.length; j++) {
+                    const b = nodos[j];
+                    const d = Math.hypot(a.x - b.x, a.y - b.y);
+                    if (d < DIST) {
+                        ctx.strokeStyle = `rgba(34,211,238,${(1 - d / DIST) * .16})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+                    }
+                }
+            }
+            for (const p of paquetes) {
+                const a = nodos[p.de], b = nodos[p.a];
+                if (!a || !b) continue;
+                const x = a.x + (b.x - a.x) * p.t, y = a.y + (b.y - a.y) * p.t;
+                ctx.fillStyle = 'rgba(103,232,249,.9)';
+                ctx.fillRect(x - 2.5, y - 2.5, 5, 5);
+            }
+            for (const n of nodos) {
+                if (n.marca > 0) {
+                    ctx.strokeStyle = `rgba(${n.color},${n.marca * .8})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(n.x, n.y, 4 + (1 - n.marca) * 18, 0, Math.PI * 2); ctx.stroke();
+                }
+                ctx.fillStyle = n.r > 3 ? 'rgba(59,130,246,.75)' : 'rgba(148,163,184,.45)';
+                ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        function paso() {
+            for (const n of nodos) {
+                n.x += n.vx; n.y += n.vy;
+                if (n.x < 0 || n.x > ancho) n.vx *= -1;
+                if (n.y < 0 || n.y > alto) n.vy *= -1;
+                if (n.marca > 0) n.marca = Math.max(0, n.marca - .012);
+            }
+            paquetes = paquetes.filter(p => (p.t += .018) < 1);
+            dibujar();
+            requestAnimationFrame(paso);
+        }
+
+        window.addEventListener('resize', redimensionar);
+        redimensionar();
+        if (!reducirMovimiento) {
+            setInterval(lanzarPaquete, 260);
+            setInterval(clasificarNodo, 900);
+            requestAnimationFrame(paso);
+        }
+
+        /* ---------- Hero: red neuronal y clasificador ilustrativo ---------- */
+        const svg = document.getElementById('nn');
+        const NS = 'http://www.w3.org/2000/svg';
+        const rasgos = ['longitud', 'entropía', 'dígitos', 'guiones', 'subdominios', 'TLD'];
+        const capas = [rasgos.length, 5, 4, 1];
+        const xs = [84, 172, 258, 330];
+        const posiciones = capas.map((n, c) => Array.from({ length: n }, (_, i) => ({ x: xs[c], y: 85 + (i - (n - 1) / 2) * 26 })));
+        const aristas = [];
+        for (let c = 0; c < capas.length - 1; c++) {
+            for (const a of posiciones[c]) for (const b of posiciones[c + 1]) {
+                const l = document.createElementNS(NS, 'line');
+                l.setAttribute('x1', a.x); l.setAttribute('y1', a.y); l.setAttribute('x2', b.x); l.setAttribute('y2', b.y);
+                l.setAttribute('class', 'nn-arista'); svg.appendChild(l); aristas.push(l);
+            }
+        }
+        const circulos = [];
+        posiciones.forEach((capa, c) => capa.forEach((p, i) => {
+            const k = document.createElementNS(NS, 'circle');
+            k.setAttribute('cx', p.x); k.setAttribute('cy', p.y); k.setAttribute('r', c === 3 ? 9 : 6);
+            k.setAttribute('class', 'nn-nodo'); svg.appendChild(k); circulos.push(k);
+            if (c === 0) {
+                const t = document.createElementNS(NS, 'text');
+                t.setAttribute('x', p.x - 12); t.setAttribute('y', p.y + 3.5); t.setAttribute('text-anchor', 'end');
+                t.setAttribute('font-size', '10'); t.setAttribute('fill', '#94a3b8'); t.setAttribute('font-family', 'JetBrains Mono, monospace');
+                t.textContent = rasgos[i]; svg.appendChild(t);
+            }
+        }));
+        const salida = document.createElementNS(NS, 'text');
+        salida.setAttribute('x', 330); salida.setAttribute('y', 112); salida.setAttribute('text-anchor', 'middle');
+        salida.setAttribute('font-size', '10'); salida.setAttribute('fill', '#c4b5fd'); salida.setAttribute('font-family', 'JetBrains Mono, monospace');
+        salida.textContent = 'P(mal.)'; svg.appendChild(salida);
+
+        // Ejemplos ficticios (.example) para no señalar dominios reales
+        const ejemplos = [
+            { d: 'portal-bancario.example', p: .08 },
+            { d: 'secure-l0gin-verif1cation-7731.example', p: .91 },
+            { d: 'x9k2qv7zt0p.example', p: .84 },
+            { d: 'biblioteca-municipal.example', p: .05 },
+            { d: 'cuenta-update-0x3f.serv-auth.example', p: .77 },
+            { d: 'noticias.example', p: .03 }
+        ];
+        function entropia(s) {
+            const f = {}; for (const ch of s) f[ch] = (f[ch] || 0) + 1;
+            return Object.values(f).reduce((h, c) => h - (c / s.length) * Math.log2(c / s.length), 0);
+        }
+        let idx = 0;
+        function clasificar() {
+            const e = ejemplos[idx++ % ejemplos.length];
+            const host = e.d.replace(/\.example$/, '');
+            const r = `len=${e.d.length} H=${entropia(host).toFixed(2)} dig=${(host.match(/\d/g) || []).length} guion=${(host.match(/-/g) || []).length} sub=${host.split('.').length - 1}`;
+            document.getElementById('clf-dominio').textContent = e.d;
+            document.getElementById('clf-rasgos').textContent = r;
+            const barra = document.getElementById('clf-barra');
+            const mal = e.p >= .5;
+            barra.style.background = mal ? 'var(--red)' : 'var(--green)';
+            barra.style.width = (e.p * 100) + '%';
+            document.getElementById('clf-p').textContent = e.p.toFixed(2).replace('.', ',');
+            const v = document.getElementById('clf-veredicto');
+            v.textContent = mal ? '⚠ sospechoso → reglas de fiabilidad' : '✓ sin indicios';
+            v.className = 'min-w-0 text-right ' + (mal ? 'text-red-300' : 'text-emerald-300');
+            aristas.forEach(a => a.classList.toggle('activa', Math.random() < .22));
+            circulos.forEach(c => c.classList.toggle('activo', Math.random() < .35));
+        }
+        clasificar();
+        if (!reducirMovimiento) setInterval(clasificar, 2800);
+
+        /* ---------- Tooltip compartido ---------- */
+        const tip = document.getElementById('tooltip');
+        function conTooltip(el, html) {
+            el.addEventListener('mouseenter', () => { tip.innerHTML = html; tip.style.opacity = 1; });
+            el.addEventListener('mousemove', (ev) => {
+                const w = tip.offsetWidth;
+                tip.style.left = Math.min(ev.clientX + 14, window.innerWidth - w - 8) + 'px';
+                tip.style.top = (ev.clientY + 14) + 'px';
+            });
+            el.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+        }
+
+        /* ---------- Barras horizontales (una sola serie por gráfico) ---------- */
+        const barrasPendientes = [];
+        function barras(id, datos, { max, formato, color = '#22d3ee', ancho = 'w-32 sm:w-40', tooltip } = {}) {
+            const cont = document.getElementById(id);
+            const tope = max || Math.max(...datos.map(d => d.v));
+            datos.forEach(d => {
+                const fila = document.createElement('div');
+                fila.className = 'flex items-center gap-3 text-xs group cursor-default';
+                fila.innerHTML = `
+                    <span class="${ancho} shrink-0 text-slate-400 truncate">${d.etiqueta}</span>
+                    <span class="relative flex-1 h-3.5 rounded-r bg-slate-800/60">
+                        <span class="barra absolute inset-y-0 left-0 rounded-r group-hover:brightness-125" style="width:0;background:${d.color || color}"></span>
+                    </span>
+                    <span class="w-14 text-right font-mono text-slate-300">${formato(d.v)}</span>`;
+                cont.appendChild(fila);
+                const b = fila.querySelector('.barra');
+                barrasPendientes.push({ b, w: Math.max(.6, (d.v / tope) * 100) });
+                if (tooltip) conTooltip(fila, tooltip(d));
+            });
+        }
+
+        barras('graf-tipos', [
+            { etiqueta: 'url', v: 46293 }, { etiqueta: 'ip', v: 18338 }, { etiqueta: 'sha256', v: 6307 },
+            { etiqueta: 'domain', v: 3467 }, { etiqueta: 'md5', v: 273 }, { etiqueta: 'sha1', v: 176 }, { etiqueta: 'cidr (/24)', v: 30 }
+        ], { formato: v => fmt.format(v), ancho: 'w-20', tooltip: d => `${d.etiqueta}: ${fmt.format(d.v)} indicadores` });
+
+        // Validación VirusTotal (CLAUDE.md §5). Gris = grupos de control no maliciosos.
+        const CONTROL = '#64748b';
+        barras('graf-vt', [
+            { etiqueta: 'URLs PhishTank', v: 100, n: 32, cob: 97, uno: 100 },
+            { etiqueta: 'sha256 ThreatFox', v: 100, n: 49, cob: 98, uno: 100 },
+            { etiqueta: 'Dominios PhishTank', v: 97, n: 66, cob: 100, uno: 100 },
+            { etiqueta: 'sha256 TweetFeed', v: 91, n: 45, cob: 90, uno: 93 },
+            { etiqueta: 'URLs TweetFeed', v: 82, n: 33, cob: 100, uno: 97 },
+            { etiqueta: 'URLs URLhaus', v: 73, n: 33, cob: 100, uno: 100 },
+            { etiqueta: 'IPs blocklist.de', v: 70, n: 141, cob: 100, uno: 90 },
+            { etiqueta: 'Dominios TweetFeed', v: 61, n: 66, cob: 100, uno: 91 },
+            { etiqueta: 'Dominios abuse.ch', v: 59, n: 66, cob: 100, uno: 91 },
+            { etiqueta: 'IPs de bloques /24', v: 41, n: 59, cob: 100, uno: 98 },
+            { etiqueta: 'Control · dominios Tranco', v: .5, n: 198, cob: 100, uno: 6, color: CONTROL },
+            { etiqueta: 'Control · raíces Tranco', v: 0, n: 30, cob: 100, uno: 17, color: CONTROL }
+        ], {
+            max: 100, formato: pct, ancho: 'w-36 sm:w-48',
+            tooltip: d => `<b>${d.etiqueta}</b><br>n = ${d.n} · cobertura ${pct(d.cob)}<br>≥1 detección: ${pct(d.uno)}<br>≥3 detecciones: ${pct(d.v)}`
+        });
+
+        barras('graf-tweetfeed', [
+            { etiqueta: 'corroborado', v: 100, n: 11 }, { etiqueta: 'malware / C2', v: 94, n: 18 },
+            { etiqueta: 'phishing', v: 60, n: 30 }, { etiqueta: 'sin etiqueta', v: 28, n: 18 }
+        ], { max: 100, formato: pct, color: '#a78bfa', ancho: 'w-24', tooltip: d => `${d.etiqueta}: ${pct(d.v)} (n = ${d.n})` });
+
+        barras('graf-ipsum', [
+            { etiqueta: '≥3 listas', v: 96, n: 54 }, { etiqueta: '1–2 listas', v: 82, n: 34 }, { etiqueta: 'ninguna', v: 36, n: 53 }
+        ], { max: 100, formato: pct, color: '#a78bfa', ancho: 'w-24', tooltip: d => `${d.etiqueta}: ${pct(d.v)} confirmadas (n = ${d.n})` });
+
+        barras('graf-ablacion', [
+            { etiqueta: 'todas', v: .91 }, { etiqueta: 'sin PhishTank', v: .92 },
+            { etiqueta: 'sin TweetFeed', v: .85 }, { etiqueta: 'sin abuse.ch', v: .79 }
+        ], { max: 1, formato: v => v.toFixed(2).replace('.', ','), color: '#a78bfa', ancho: 'w-28', tooltip: d => `ROC-AUC ${d.etiqueta}: ${d.v.toFixed(2).replace('.', ',')}` });
+
+        // Curva de aprendizaje como columnas
+        const curva = document.getElementById('graf-curva');
+        [{ e: '100', v: .44 }, { e: '3.000', v: .72 }, { e: 'todos', v: .80 }].forEach(d => {
+            const col = document.createElement('div');
+            col.className = 'flex-1 flex flex-col items-center justify-end h-full gap-2';
+            col.innerHTML = `
+                <span class="font-mono text-sm text-slate-200">${d.v.toFixed(2).replace('.', ',')}</span>
+                <span class="w-full max-w-[56px] rounded-t bg-slate-800/60 relative flex-1 flex items-end">
+                    <span class="barra-v w-full rounded-t" style="height:0;background:#a78bfa;transition:height 1.1s cubic-bezier(.2,.8,.2,1)"></span>
+                </span>
+                <span class="text-xs text-slate-400">${d.e}</span>`;
+            curva.appendChild(col);
+            barrasPendientes.push({ b: col.querySelector('.barra-v'), h: d.v * 100 });
+            conTooltip(col, `PR-AUC con ${d.e} registros: ${d.v.toFixed(2).replace('.', ',')}`);
+        });
+
+        // Animar barras al entrar en pantalla
+        function revelar(item) { if (item.h != null) item.b.style.height = item.h + '%'; else item.b.style.width = item.w + '%'; }
+        if ('IntersectionObserver' in window && !reducirMovimiento) {
+            const obs = new IntersectionObserver(entradas => entradas.forEach(en => {
+                if (!en.isIntersecting) return;
+                barrasPendientes.filter(i => en.target.contains(i.b)).forEach(revelar);
+                obs.unobserve(en.target);
+            }), { threshold: .25 });
+            document.querySelectorAll('#fase1 figure, #fase1 article').forEach(el => obs.observe(el));
+        } else {
+            barrasPendientes.forEach(revelar);
+        }
+
+        /* ---------- Roadmap: cadena de bloques con hash real ---------- */
+        const fases = [
+            {
+                n: '01', titulo: 'Datos, fiabilidad y modelo de IA', estado: 'curso', icono: 'brain',
+                resumen: 'Fuentes seleccionadas, esquema común, clases de entrenamiento, validación con VirusTotal, pesos de fiabilidad y primer ensayo del modelo.',
+                hecho: ['Selección de fuentes', 'Limpieza y esquema común', 'Clases para entrenar', 'Validación con VirusTotal', 'Pesos de fiabilidad', 'Primer ensayo del modelo'],
+                falta: ['Entrenamiento definitivo y calibración', 'Fórmula de severidad', 'API de scoring + resumen LLM']
+            },
+            { n: '02', titulo: 'Esquema PostgreSQL y carga idempotente', estado: 'pendiente', icono: 'database',
+              resumen: 'Tablas indicator y sighting (incl. cidr, familia de fuente y categoría), carga con ON CONFLICT y guardado del crudo con fecha de descarga.' },
+            { n: '03', titulo: 'Microservicios Java e ingesta programada', estado: 'pendiente', icono: 'server',
+              resumen: 'API Gateway, servicio de ingesta y de scoring en Spring Boot; feeds programados (abuse.ch, TweetFeed, PhishTank, blocklist.de cada hora, IPsum diario).' },
+            { n: '04', titulo: 'Red blockchain con Hyperledger Fabric', estado: 'pendiente', icono: 'blocks',
+              resumen: 'Red de 2–3 organizaciones y chaincode que registra y verifica el hash canónico de cada IOC (tipo + valor + fuente + timestamp).' },
+            { n: '05', titulo: 'Dashboard React e integración end-to-end', estado: 'pendiente', icono: 'layout-dashboard',
+              resumen: 'Tabla de IOCs priorizados, detalle con resumen del LLM, sello de verificación en la cadena y flujo completo feed → IA → blockchain → analista.' },
+            { n: '06', titulo: 'Pruebas, memoria y defensa', estado: 'pendiente', icono: 'file-text',
+              resumen: 'Tests de los servicios, justificación de los pesos en la memoria del TFM, documentación de despliegue y demo reproducible.' }
+        ];
+
+        async function sha256(texto) {
+            if (!(window.crypto && crypto.subtle)) return null;
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function pintarCadena() {
+            const ol = document.getElementById('cadena');
+            let previo = '0'.repeat(64);
+            for (let i = 0; i < fases.length; i++) {
+                const f = fases[i];
+                const hash = await sha256(previo + f.n + f.titulo + f.estado);
+                const enCurso = f.estado === 'curso';
+                const li = document.createElement('li');
+                li.className = 'relative pl-[72px]';
+                const progreso = enCurso ? Math.round(f.hecho.length / (f.hecho.length + f.falta.length) * 100) : 0;
+                li.innerHTML = `
+                    ${i < fases.length - 1 ? `<span class="bloque-enlace ${enCurso ? 'hecho' : ''}"></span>` : ''}
+                    <span class="absolute left-0 top-0 w-14 h-14 rounded-xl flex items-center justify-center border ${enCurso ? 'bg-cyan-500/15 border-cyan-400/60 latido' : 'bg-ink-900 border-dashed border-slate-600'}">
+                        <i data-lucide="${f.icono}" class="w-6 h-6 ${enCurso ? 'text-cyan-300' : 'text-slate-500'}"></i>
+                    </span>
+                    <div class="vidrio rounded-2xl border ${enCurso ? 'border-cyan-500/40' : 'border-slate-800'} p-5 md:p-6">
+                        <div class="flex flex-wrap items-center gap-3 mb-2">
+                            <span class="font-mono text-xs text-slate-500">BLOQUE ${f.n}</span>
+                            ${enCurso
+                                ? '<span class="text-[11px] font-semibold uppercase tracking-wider text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-2.5 py-0.5">En curso</span>'
+                                : '<span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 border border-slate-700 rounded-full px-2.5 py-0.5">Pendiente</span>'}
+                        </div>
+                        <h3 class="text-lg md:text-xl font-semibold ${enCurso ? 'text-white' : 'text-slate-300'}">${f.titulo}</h3>
+                        <p class="text-sm text-slate-400 mt-2">${f.resumen}</p>
+                        ${enCurso ? `
+                            <div class="mt-5">
+                                <div class="flex justify-between text-xs mb-1.5"><span class="text-slate-400">${f.hecho.length} de ${f.hecho.length + f.falta.length} tareas</span><span class="font-mono text-cyan-300">${progreso} %</span></div>
+                                <div class="relative h-2 rounded-full bg-slate-800 overflow-hidden barrido"><span class="block h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-400" style="width:${progreso}%"></span></div>
+                                <div class="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 mt-4 text-sm">
+                                    ${f.hecho.map(t => `<span class="flex items-center gap-2 text-slate-300"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i>${t}</span>`).join('')}
+                                    ${f.falta.map(t => `<span class="flex items-center gap-2 text-slate-500"><i data-lucide="circle-dashed" class="w-4 h-4 shrink-0"></i>${t}</span>`).join('')}
+                                </div>
+                                <a href="#fase1" class="inline-flex items-center gap-1.5 mt-5 text-sm text-cyan-300 hover:text-cyan-200">Ver cómo se ha hecho <i data-lucide="arrow-down" class="w-4 h-4"></i></a>
+                            </div>` : ''}
+                        <div class="mt-4 pt-3 border-t border-slate-800/80 font-mono text-[10px] sm:text-[11px] text-slate-500 space-y-0.5 break-all">
+                            <div><span class="text-slate-600">prev&nbsp;</span>${previo.slice(0, 24)}…</div>
+                            <div><span class="text-slate-600">hash&nbsp;</span><span class="${enCurso ? 'text-cyan-400/80' : ''}">${hash ? hash.slice(0, 24) + '…' : 'no disponible en este navegador'}</span></div>
+                        </div>
+                    </div>`;
+                ol.appendChild(li);
+                if (hash) previo = hash;
+            }
+            lucide.createIcons();
+        }
+
         lucide.createIcons();
+        pintarCadena();
+    })();
     </script>
 </body>
 </html>

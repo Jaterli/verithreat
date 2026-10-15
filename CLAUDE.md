@@ -38,7 +38,9 @@ verithreat/ai/
 
 Datos esperados en `data/raw/`: `threatfox.csv`, `urlhaus.csv`, `export-ips_all.txt` (o `all.txt` de blocklist.de),
 `verified_online.csv` (PhishTank), `month.csv` y `exclusive.csv` (TweetFeed), `top-1m.csv` (Tranco),
-`ipsum_level1.txt` … `ipsum_level8.txt` (los descarga el notebook), `resultados_vt.csv` (salida de VirusTotal).
+`ipsum_level1.txt` … `ipsum_level8.txt` (los descarga el notebook). La muestra y la salida de VirusTotal
+(`muestra_vt.csv`, `resultados_vt.csv`) están en `ai/src/`. Nada de esto se versiona (`.gitignore`: `ai/data/raw/`,
+`*.csv`).
 
 ## 3. Fuentes: qué se usa y qué se descartó
 
@@ -93,34 +95,49 @@ Las exportaciones `recent` cubren pocos días y se regeneran cada pocos minutos.
 
 ## 5. Cifras de referencia
 
-- **Unificado**: 75.513 observaciones · 74.886 indicadores únicos (46.295 URLs, 18.338 IPs, 6.307 sha256,
+- **Unificado**: 75.511 observaciones · 74.884 indicadores únicos (46.293 URLs, 18.338 IPs, 6.307 sha256,
   3.467 dominios, 273 md5, 176 sha1, 30 cidr). blocklist.de = 93 % de las IPs individuales.
-- **Validación VirusTotal** (muestra de 596, semilla 42, resultados en `resultados_vt.csv`; ≥1 / ≥3 detecciones):
+- **Validación VirusTotal** (muestra de 825, semilla 42, **completa**: 818 `ok` y 7 `not_found`; resultados en
+  `ai/src/resultados_vt.csv`). Tasas sobre los `ok`; cobertura = parte del grupo que VirusTotal conoce:
 
-| Grupo | n | ≥1 | ≥3 |
-|---|---|---|---|
-| Dominios PhishTank | 66 | 100 % | 97 % |
-| Dominios abuse.ch | 66 | 91 % | 59 % |
-| Dominios TweetFeed | 66 | 91 % | 61 % |
-| IPs individuales blocklist.de | 141 | 90 % | 70 % |
-| IPs de bloques /24 | 59 | 98 % | 41 % |
-| Dominios Tranco (3 tramos) | 198 | 6 % | 0,5 % |
+| Grupo | n | Cobertura | ≥1 | ≥3 |
+|---|---|---|---|---|
+| Dominios PhishTank | 66 | 100 % | 100 % | 97 % |
+| Dominios abuse.ch | 66 | 100 % | 91 % | 59 % |
+| Dominios TweetFeed | 66 | 100 % | 91 % | 61 % |
+| IPs individuales blocklist.de | 141 | 100 % | 90 % | 70 % |
+| IPs de bloques /24 | 59 | 100 % | 98 % | 41 % |
+| Dominios Tranco (3 tramos) | 198 | 100 % | 6 % | 0,5 % |
+| URLs PhishTank | 32 | 97 % | 100 % | 100 % |
+| URLs URLhaus | 33 | 100 % | 100 % | 73 % |
+| URLs TweetFeed | 33 | 100 % | 97 % | 82 % |
+| Raíces `https://dominio/` de Tranco | 30 | 100 % | 17 % | 0 % |
+| sha256 ThreatFox | 49 | 98 % | 100 % | 100 % |
+| sha256 TweetFeed | 45 | 90 % | 93 % | 91 % |
 
-- **TweetFeed se gradúa**: con ≥3 detecciones, 100 % si lo corroboran sus 5 feeds de referencia (n=11), 94 % con
-  etiqueta malware/C2, 60 % phishing, 28 % sin etiqueta.
+- **TweetFeed se gradúa**: dominios con ≥3 detecciones: 100 % si lo corroboran sus 5 feeds de referencia (n=11),
+  94 % con etiqueta malware/C2 (n=18), 60 % phishing (n=30), 28 % sin etiqueta (n=18). En hashes, corroborados 100 %
+  (n=23) frente a 82 % (n=22); VirusTotal no conoce 5 de 50 (10 %).
+- **URLs**: el host de plataforma de doble uso no impide juzgar la URL (PhishTank 14/14 con ≥3; URLhaus 5/8). Las
+  URLs de URLhaus sin confirmar son sobre todo ficheros en GitHub/Drive y binarios de botnet; las de TweetFeed,
+  instaladores legítimos de ScreenConnect usados como señuelo.
+- **Hashes**: el 100 % de ThreatFox es en parte circular (los motores de VirusTotal y abuse.ch comparten muestras) y su
+  último análisis tiene una mediana de 34 días. Los 3 hashes de TweetFeed con 0 detecciones son ficheros Text/ICO/C.
 - **IPsum gradúa las IPs individuales**: ≥3 listas → 96 % (n=54); 1–2 → 82 % (n=34); ninguna → 36 % (n=53);
   Spearman 0,71.
 - **Pesos preliminares (configurables, no hay verdad contra la que validarlos)**: PhishTank ≈0,97; abuse.ch ≈0,59;
   TweetFeed ≈0,61 (≈1,00 corroborado / 0,94 malware-C2 / 0,60 phishing / 0,28 sin etiqueta); IPs individuales
-  0,96 / 0,82 / 0,36 según IPsum; bloques /24 ≈0,41.
+  0,96 / 0,82 / 0,36 según IPsum; bloques /24 ≈0,41. Son pesos de **dominio/IP**; para URLs y hashes la evidencia
+  (tabla) es más alta, pero con n=30–50 y sin decidir aún si se usan pesos distintos por tipo.
 - **Modelo A (ensayo rápido, gradient boosting)**: PR-AUC 0,44 con 100 registros → 0,72 con 3.000 → 0,80 con todos
   (ROC-AUC 0,91; test con 17,6 % de maliciosos). Sin abuse.ch en el entrenamiento, ROC-AUC 0,79 (sin PhishTank 0,92,
   sin TweetFeed 0,85): **la variedad pesa más que el volumen**. Un ensayo anterior daba 0,87 porque incluía
   plataformas compartidas (inflaba el resultado).
 - **blocklist.de por DNS** (`bl.blocklist.de`, 200 IPs de `all.txt`): las 131 individuales tienen todas `Last-Attack`
   (mediana 26,7 h, siempre <48 h) y servicio coherente con las listas; las 69 de bloques no tienen fecha.
-- Las consultas a VirusTotal se hicieron en dos días (415 y 181); no se aprecia efecto del día. VirusTotal devuelve el
-  último análisis que tiene (antigüedad mediana 76 h), no uno nuevo.
+- Las consultas a VirusTotal se hicieron el 13 y el 14 de octubre de 2026 (415 y 410); no se aprecia efecto del día.
+  VirusTotal devuelve el último análisis que tiene (antigüedad mediana 76 h en dominios/IPs; 8–16 días en URLs), no
+  uno nuevo.
 
 ## 6. Cómo ejecutar
 
@@ -139,10 +156,11 @@ python extract_historic_blocklist.py --verificar 200 --solo-verificar --semilla 
 python extract_historic_blocklist.py --dns --max-dns 500
 ```
 
-`vt_muestreo.py` ya incluye, **pendientes de ejecutar**, 229 consultas nuevas: 99 URLs maliciosas (URLhaus, PhishTank,
-TweetFeed; máx. 2 por dominio registrable y grupo), 30 raíces de sitios populares como base de falsos positivos y
-100 hashes sha256 (ThreatFox y TweetFeed). Usan `/urls` y `/files` de la API v3; **no se han probado contra la API
-real** (solo con respuestas simuladas). Si VirusTotal nunca analizó algo, devuelve 404 → `not_found`.
+La muestra (`ai/src/muestra_vt.csv`, 825 indicadores) está **consultada entera**: incluye 99 URLs maliciosas
+(URLhaus, PhishTank, TweetFeed; máx. 2 por dominio registrable y grupo), 30 raíces de sitios populares como base de
+falsos positivos y 100 hashes sha256 (ThreatFox y TweetFeed), consultados con `/urls` y `/files` de la API v3. Si
+VirusTotal nunca analizó algo, devuelve 404 → `not_found`. Relanzar el script solo consulta lo que falte; el resumen
+final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL y `python-dotenv` es opcional.
 
 ## 7. Cosas NO verificadas (tratarlas como hipótesis)
 
@@ -152,7 +170,9 @@ real** (solo con respuestas simuladas). Si VirusTotal nunca analizó algo, devue
 - Qué lista de IPsum contiene los bloques /24 de blocklist.de (quizá la propia blocklist.de).
 - Que `getlast.php` devuelva IPs por último ataque (no por primera aparición); su ventana máxima declarada es 50.000 s.
 - Que las IPs/hosts de plataformas compartidas o sitios comprometidos sean maliciosos como dominio (no lo son).
-- Hashes, URLs completas e IPs/hashes/URLs de TweetFeed: **sin validar** con VirusTotal todavía.
+- Sin validar con VirusTotal: md5/sha1, URLs de ThreatFox, IPs de ThreatFox y TweetFeed. Los grupos de URLs y
+  hashes validados son pequeños (n=30–50, intervalos de ±10–15 puntos).
+- Que los hashes de TweetFeed con 0 detecciones sean artefactos benignos y no malware sin detectar.
 - La consulta DNS por IPv6 de blocklist.de no está documentada (esas IPs quedan `IPV6_NO_SOPORTADO`).
 
 ## 8. Reglas de trabajo
@@ -172,7 +192,8 @@ real** (solo con respuestas simuladas). Si VirusTotal nunca analizó algo, devue
 
 ## 9. Próximos pasos (por orden)
 
-1. Ejecutar las 229 consultas de URLs y hashes con VirusTotal y actualizar las secciones de validación y fiabilidad.
+1. ~~Validar URLs y hashes con VirusTotal~~ (hecho el 14-10-2026; cifras en la sección 5). Pendiente de decidir:
+   ¿pesos de fiabilidad distintos por tipo de indicador (URL/hash frente a dominio)?
 2. Diseñar el esquema **PostgreSQL** (`indicator`, `sighting`, tipos incl. `cidr`, familia de fuente, categoría) y una
    carga **idempotente** (`ON CONFLICT`) desde los cargadores. Guardar crudo y fecha de descarga.
 3. Pipeline de ingesta programada: abuse.ch (con clave), TweetFeed (`month.csv` + `exclusive.csv`), PhishTank,

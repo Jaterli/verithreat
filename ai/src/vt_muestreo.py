@@ -34,10 +34,15 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
-from dotenv import load_dotenv
 
-load_dotenv()  # Carga el archivo .env en os.environ
 import pandas as pd
+
+try:  # python-dotenv es opcional: sin él, VT_API_KEY tiene que estar ya en el entorno
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()  # carga .env (buscándolo hacia arriba desde este script) en os.environ
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cargadores_corregidos import (DOBLE_USO, es_doble_uso, es_ip, load_blocklist, load_phishtank,  # noqa: E402
@@ -302,9 +307,6 @@ def resumen(salida: Path) -> None:
     r = pd.read_csv(salida)
     ok = r[r["status"] == "ok"].copy()
     print("\nEstados:", r["status"].value_counts().to_dict())
-    nf = r[r["status"] == "not_found"]
-    if not nf.empty:
-        print("not_found (VirusTotal no tiene análisis) por grupo:", nf["grupo"].value_counts().to_dict())
     if ok.empty:
         return
     plataforma = (ok["tipo"] == "domain") & ok["indicador"].map(es_doble_uso)
@@ -318,9 +320,14 @@ def resumen(salida: Path) -> None:
     historico = ~ok["grupo"].str.startswith(GRUPOS_ACTIVOS)
     if historico.any():
         print(f"Grupos históricos (fuera del diseño actual): {ok.loc[historico, 'grupo'].value_counts().to_dict()}")
-    print(ok.groupby(["clase_esperada", "grupo"]).agg(
+    tabla = ok.groupby(["clase_esperada", "grupo"]).agg(
         n=("indicador", "size"), con_deteccion=("con_deteccion", "mean"), con_3_detecciones=("con_3_detecciones", "mean"),
-        malicious_mediana=("malicious", "median")).round(2).to_string())
+        malicious_mediana=("malicious", "median"))
+    # Cobertura: parte del grupo que VirusTotal conoce (not_found = nunca lo analizó). Las tasas se calculan solo sobre n.
+    nf = r[r["status"] == "not_found"].groupby(["clase_esperada", "grupo"]).size()
+    tabla.insert(1, "not_found", nf.reindex(tabla.index, fill_value=0))
+    tabla.insert(2, "cobertura", tabla["n"] / (tabla["n"] + tabla["not_found"]))
+    print(tabla.round(2).to_string())
 
 
 def main() -> None:
