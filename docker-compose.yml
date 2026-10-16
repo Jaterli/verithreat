@@ -1,0 +1,27 @@
+# VeriThreat · entorno local. Por ahora solo la base de datos; los microservicios y Fabric se añadirán aquí.
+#
+# La contraseña va en .env (no se versiona):  POSTGRES_PASSWORD=...  (es la del usuario «verithreat» del contenedor)
+#   docker compose up -d postgres
+# El esquema (db/schema.sql) se aplica solo la primera vez que se crea el volumen. Para empezar de cero:
+#   docker compose down -v
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: verithreat
+      POSTGRES_USER: verithreat
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+    ports:
+      # solo accesible desde este equipo; 5433 por defecto para no chocar con un PostgreSQL local en el 5432
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - datos_postgres:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U verithreat -d verithreat"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  datos_postgres:

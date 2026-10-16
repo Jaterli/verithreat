@@ -77,13 +77,13 @@ Se descartan también, como enfoque: usar confianza, estado o familia como etiqu
 
 ## 4. Método seguido
 
-1. **Exploración inicial** (notebook `01_exploracion.ipynb`). Se revisó el cargador original y se corrigieron los fallos que impedían leer bien los CSV: nombres de columna de ThreatFox, comparación de fechas con y sin zona horaria, `tags` almacenados como texto de lista, cabecera `# id` de URLhaus y valores `n/a` o `None` tratados como texto.
+1. **Exploración inicial** (notebook `01_exploration.ipynb`). Se revisó el cargador original y se corrigieron los fallos que impedían leer bien los CSV: nombres de columna de ThreatFox, comparación de fechas con y sin zona horaria, `tags` almacenados como texto de lista, cabecera `# id` de URLhaus y valores `n/a` o `None` tratados como texto.
 2. **Evaluación de fuentes.** Cada candidata se midió con los criterios de la sección 3: volumen, solape con las demás, calidad del formato y, cuando fue posible, validación con VirusTotal.
 3. **Poda.** Se dejó solo lo que aporta valor claro y se descartó lo marginal.
 4. **Esquema común.** Un indicador único con una observación por cada fuente que lo reporta, con categoría de amenaza, familia de fuente y nivel de IPsum.
 5. **Clase no maliciosa.** Un top de Tranco depurado, necesario porque todas las fuentes contienen solo amenazas.
 6. **Lista de doble uso.** Plataformas y servicios compartidos que no deben etiquetarse como maliciosos a nivel de dominio.
-7. **Validación externa.** Una muestra aleatoria y reproducible consultada a la API de VirusTotal con `vt_muestreo.py`.
+7. **Validación externa.** Una muestra aleatoria y reproducible consultada a la API de VirusTotal con `vt_sampling.py`.
 8. **Ensayo de aprendizaje.** Un experimento rápido para estimar cuántos datos necesita el modelo.
 
 ## 5. Preparación de los datos
@@ -261,7 +261,7 @@ Los indicadores maliciosos tienen atributos que los de Tranco no pueden tener (f
 
 ### 9.3 Cuántos datos hacen falta
 
-Se midió con un experimento rápido sobre el conjunto final (`ensayo_aprendizaje.py`, semilla 0): gradient boosting (`HistGradientBoostingClassifier`, 200 iteraciones) con esas características, con todos los hosts de un mismo dominio registrable siempre en el mismo lado del reparto, y un test de 12.158 registros retenidos con un 17,6 % de maliciosos (la referencia del azar para PR-AUC es 0,18). Cada tamaño se repite tres veces con submuestras distintas y se da la media.
+Se midió con un experimento rápido sobre el conjunto final (`learning_trial.py`, semilla 0): gradient boosting (`HistGradientBoostingClassifier`, 200 iteraciones) con esas características, con todos los hosts de un mismo dominio registrable siempre en el mismo lado del reparto, y un test de 12.158 registros retenidos con un 17,6 % de maliciosos (la referencia del azar para PR-AUC es 0,18). Cada tamaño se repite tres veces con submuestras distintas y se da la media.
 
 | Registros de entrenamiento | Maliciosos aprox. | PR-AUC | ROC-AUC |
 | --- | --- | --- | --- |
@@ -308,7 +308,7 @@ No se necesitan más fuentes ahora. Añadir más volumen del mismo tipo aporta p
 
 1. Escribir su cargador y una sección en el notebook.
 2. Medir su solape con las fuentes actuales en una ventana de tiempo común.
-3. Validar una muestra de 50 a 100 indicadores con `vt_muestreo.py`.
+3. Validar una muestra de 50 a 100 indicadores con `vt_sampling.py`.
 4. Decidir su peso, o descartarla, con los criterios de la sección 3.
 
 ## 11. Cómo reproducirlo
@@ -317,31 +317,31 @@ No se necesitan más fuentes ahora. Añadir más volumen del mismo tipo aporta p
 
 | Archivo | Función |
 | --- | --- |
-| `01_exploracion.ipynb` | Carga, calidad, ventanas temporales, solapamientos, clase no maliciosa y esquema común |
-| `cargadores_corregidos.py` | Cargadores de las fuentes del núcleo, de IPsum y de Tranco, y la lista de doble uso |
-| `cargadores_opcionales.py` | Cargadores de MalwareBazaar y ThreatCluster, descartadas pero conservadas por si se reconsideran |
-| `vt_muestreo.py` | Construcción de la muestra y consulta a VirusTotal, con reintentos y reanudación |
-| `ensayo_aprendizaje.py` | Ensayo del modelo A: curva de aprendizaje y generalización sin una fuente (sección 9.3); salida de referencia en `ensayo_aprendizaje_referencia.txt` |
+| `01_exploration.ipynb` | Carga, calidad, ventanas temporales, solapamientos, clase no maliciosa y esquema común |
+| `loaders.py` | Cargadores de las fuentes del núcleo, de IPsum y de Tranco, y la lista de doble uso |
+| `optional_loaders.py` | Cargadores de MalwareBazaar y ThreatCluster, descartadas pero conservadas por si se reconsideran |
+| `vt_sampling.py` | Construcción de la muestra y consulta a VirusTotal, con reintentos y reanudación |
+| `learning_trial.py` | Ensayo del modelo A: curva de aprendizaje y generalización sin una fuente (sección 9.3); salida de referencia en `ensayo_aprendizaje_referencia.txt` |
 
 ### 11.2 Pasos
 
-1. **Carpeta de datos.** Poner los siete archivos en `data/raw`: `threatfox.csv`, `urlhaus.csv`, `export-ips_all.txt`, `verified_online.csv`, `month.csv` y `exclusive.csv` (TweetFeed) y `top-1m.csv`. Los ficheros de IPsum (`ipsum_level1.txt` a `ipsum_level8.txt`) los descarga el notebook si `DESCARGAR_IPSUM` está activo.
-2. **Dependencias.** Python 3.10 o superior y `pip install pandas matplotlib requests tldextract`. `scikit-learn` solo hace falta para el ensayo de aprendizaje (`python ensayo_aprendizaje.py --data-dir data/raw`; la referencia se obtuvo con scikit-learn 1.8.0, pandas 3.0.2, numpy 2.4.4 y tldextract 5.4.0).
-3. **Notebook.** Abrir `01_exploracion.ipynb` junto a `cargadores_corregidos.py` y ejecutarlo entero. Las cifras de las secciones 5 y 6 salen de él.
+1. **Carpeta de datos.** Poner los siete archivos en `data/raw`: `threatfox.csv`, `urlhaus.csv`, `export-ips_all.txt`, `verified_online.csv`, `month.csv` y `exclusive.csv` (TweetFeed) y `top-1m.csv`. Los ficheros de IPsum (`ipsum_level1.txt` a `ipsum_level8.txt`) los descarga el notebook si `DOWNLOAD_IPSUM` está activo.
+2. **Dependencias.** Python 3.10 o superior y `pip install pandas matplotlib requests tldextract`. `scikit-learn` solo hace falta para el ensayo de aprendizaje (`python learning_trial.py --data-dir data/raw`; la referencia se obtuvo con scikit-learn 1.8.0, pandas 3.0.2, numpy 2.4.4 y tldextract 5.4.0).
+3. **Notebook.** Abrir `01_exploration.ipynb` junto a `loaders.py` y ejecutarlo entero. Las cifras de las secciones 5 y 6 salen de él.
 4. **Muestra de VirusTotal.** Generarla sin clave y revisarla:
 
 ```
-python vt_muestreo.py --data-dir data/raw --solo-muestra
+python vt_sampling.py --data-dir data/raw --sample-only
 ```
 
 5. **Consultas.** Con la clave en una variable de entorno, que no se guarda en ningún fichero:
 
 ```
 export VT_API_KEY=tu_clave
-python vt_muestreo.py --data-dir data/raw --pausa 16 --max-consultas 200
+python vt_sampling.py --data-dir data/raw --pause 16 --max-queries 200
 ```
 
-6. **Reanudar.** Relanzar el mismo comando: solo consulta lo que falta. El resumen por grupo (con la cobertura y las tasas de detección) se muestra al terminar y los datos quedan en `resultados_vt.csv`.
+6. **Reanudar.** Relanzar el mismo comando: solo consulta lo que falta. El resumen por grupo (con la cobertura y las tasas de detección) se muestra al terminar y los datos quedan en `vt_results.csv`.
 
 ### 11.3 Parámetros y avisos
 

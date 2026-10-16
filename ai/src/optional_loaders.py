@@ -14,14 +14,14 @@ MB_COLS = ["first_seen_utc", "sha256_hash", "md5_hash", "sha1_hash", "reporter",
            "file_type_guess", "mime_type", "signature", "clamav", "vtpercent", "imphash", "ssdeep", "tlsh"]
 
 
-def _sin_comentarios(path) -> io.StringIO:
+def _strip_comments(path) -> io.StringIO:
     """Quita las líneas que EMPIEZAN por '#' (no un '#' dentro de un campo)."""
     with open(path, "r", encoding="utf-8", errors="replace") as f:
         return io.StringIO("".join(l for l in f if not l.lstrip().startswith("#")))
 
 
 def load_malwarebazaar(path) -> pd.DataFrame:
-    df = pd.read_csv(_sin_comentarios(path), header=None, names=MB_COLS, skipinitialspace=True, quotechar='"')
+    df = pd.read_csv(_strip_comments(path), header=None, names=MB_COLS, skipinitialspace=True, quotechar='"')
     df["first_seen_utc"] = pd.to_datetime(df["first_seen_utc"], utc=True, errors="coerce")
     return df  # "n/a" ya se interpreta como NaN; clamav y vtpercent llegan vacías
 
