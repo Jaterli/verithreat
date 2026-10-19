@@ -82,8 +82,20 @@ def load_threatfox(path) -> pd.DataFrame:
     return df
 
 
+def _leading_comment_lines(path) -> int:
+    """Nº de líneas iniciales que empiezan por '#': el bloque de cabecera de la exportación oficial y la línea
+    «# id,dateadded,...». No se usa comment='#' de pandas porque cortaría las URLs que llevan '#'."""
+    n = 0
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            if not line.startswith("#"):
+                break
+            n += 1
+    return n
+
+
 def load_urlhaus(path) -> pd.DataFrame:
-    df = pd.read_csv(path, skiprows=1, header=None, names=UH_COLS)  # la cabecera es "# id,..."
+    df = pd.read_csv(path, skiprows=_leading_comment_lines(path), header=None, names=UH_COLS)
     for c in ("dateadded", "last_online"):
         df[c] = pd.to_datetime(df[c], utc=True, errors="coerce")
     df["tags_list"] = df["tags"].fillna("").str.split(",").apply(lambda l: [t.strip() for t in l if t.strip()])

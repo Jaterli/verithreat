@@ -137,9 +137,16 @@ ON CONFLICT DO NOTHING"""
 
 
 def connect():
+    """Conexión a la base de datos de docker-compose.yml. VERITHREAT_DSN o las variables PG* mandan; si faltan, se usan
+    los valores del contenedor (127.0.0.1:5433, usuario y base «verithreat») y POSTGRES_PASSWORD de .env."""
     import psycopg
-    dsn = os.environ.get("VERITHREAT_DSN", "")  # vacío: psycopg usa PGHOST, PGUSER, PGPASSWORD...
-    return psycopg.connect(dsn, options="-c search_path=verithreat")
+    dsn = os.environ.get("VERITHREAT_DSN")
+    if dsn:
+        return psycopg.connect(dsn, options="-c search_path=verithreat")
+    env = os.environ.get
+    return psycopg.connect(host=env("PGHOST", "127.0.0.1"), port=env("PGPORT", env("POSTGRES_PORT", "5433")),
+                           user=env("PGUSER", "verithreat"), dbname=env("PGDATABASE", "verithreat"),
+                           password=env("PGPASSWORD", env("POSTGRES_PASSWORD")), options="-c search_path=verithreat")
 
 
 def load_source(conn, source: str, data_dir: Path, forced, phishtank_window: int) -> str:

@@ -36,8 +36,11 @@ verithreat/ai/
     learning_trial.py            ensayo del modelo A (curva de aprendizaje, generalización sin una fuente); referencia
                                  en docs/ensayo_aprendizaje_referencia.txt (salida del script antes de traducirlo)
     load_db.py                   carga idempotente de las fuentes en PostgreSQL (usa source_sightings)
-    extract_*.py, threatfox_download_data.py, virustotal_*_filter.py   descargadores antiguos del autor, sin traducir;
-                                 los sustituirá la ingesta del paso 3
+    ingest.py                    ingesta programada: descarga, valida y carga lo que toque según la frecuencia de cada
+                                 fuente; instantáneas y estado en data/raw/ingest/ (3 últimas por fuente, state.json)
+    run_ingest.sh                lanzador para WSL (Programador de tareas de Windows o cron); log en data/raw/ingest/
+    threatfox_download_data.py, virustotal_*_filter.py   descargadores antiguos del autor, sin traducir; sustituidos
+                                 por ingest.py
   notebooks/01_exploration.ipynb exploración, calidad, solapes, clase no maliciosa, esquema común, validación VT
   data/raw/                      CSV de las fuentes (NO se versionan)
 verithreat/db/schema.sql         esquema PostgreSQL (se aplica solo al crear el contenedor)
@@ -68,6 +71,24 @@ ThreatCluster (1,7 % de los indicadores, solape casi nulo, confianza constante, 
 Feodo Tracker (vacío tras derribos), Spamhaus (30 días gratis: solo validar), `IoCs_Identifiers.json` (200 dominios
 alfabéticos, subconjunto de Tranco), filtro de Bloom de CIRCL (0,7–1 GB, «conocido» ≠ «benigno»), MISP como vía
 principal (duplica abuse.ch), vciso.au (agregador), C2IntelFeeds/C2-Tracker, FireHOL, otras listas de IPs de ataque.
+
+**Términos de uso** (leídos en las páginas oficiales el 17-10-2026; ninguna autoriza ni prohíbe expresamente
+redistribuir los IOCs entre organizaciones, salvo TweetFeed e IPsum):
+
+| Fuente | Uso permitido | Límites para la ingesta | Pendiente |
+|---|---|---|---|
+| abuse.ch ([términos](https://abuse.ch/terms-of-use/), 4-11-2025) | Gratis solo para usuarios autenticados y fines **no lucrativos**; uso comercial = suscripción vía Spamhaus | Volumen «razonable» sin cifra; prohíbe la recolección masiva automatizada; las exportaciones de URLhaus se generan cada 5 min y no deben pedirse más a menudo | Nada sobre redistribución ni licencia de datos |
+| blocklist.de ([términos](https://www.blocklist.de/en/terms.html)) | Gratis, «salvo descarga de las listas con demasiado volumen» | `all.txt` = últimas 48 h, regenerada cada 30 min | Nada sobre redistribución ni uso comercial |
+| PhishTank ([FAQ](https://phishtank.org/faq.php), [developer info](https://phishtank.org/developer_info.php)); operado por Cisco Talos | Gratis para todos; la FAQ permite **uso comercial y no comercial** de la API y los datos. Rigen los [General Terms de Cisco](https://www.cisco.com/c/dam/en_us/about/doing_business/legal/Cisco_General_Terms.pdf) (v6.0, 10-9-2025): licencia «for Your direct benefit», prohíben «transfer, sell, sublicense, monetize, or provide the functionality… to any third party» | Datos cada hora; límite de peticiones por hora. Sin clave funciona (`http://data.phishtank.com/data/online-valid.csv`) pero solo «unas pocas descargas al día»; con clave, más; User-Agent descriptivo obligatorio; HEAD con ETag ilimitado | Ni la FAQ ni los términos hablan de **redistribuir** los datos a terceros; los términos generales, leídos al pie de la letra, lo restringen. `online-valid.csv` = mismas columnas que `verified_online.csv` |
+| TweetFeed | Datos CC0; no verifica los indicadores | — | — |
+| IPsum ([repo](https://github.com/stamparm/ipsum)) | The Unlicense (dominio público) | Se actualiza cada 24 h | — |
+| Tranco ([web](https://tranco-list.eu/)) | Sin licencia propia declarada; fuentes con CC BY, CC BY-SA y **CC BY-NC 4.0** (Cloudflare Radar) | — | Uso comercial dudoso; citar el artículo de Tranco por buena práctica |
+| VirusTotal ([API pública](https://docs.virustotal.com/reference/public-vs-premium-api)) | API pública **prohibida en productos o servicios comerciales** y en flujos de negocio | 4 peticiones/min, 500/día | Solo para la validación académica, nunca dentro de la plataforma |
+
+Consecuencia: el TFM (académico, sin ánimo de lucro) está cubierto; un despliegue comercial (caso Minsait)
+necesitaría suscripción de abuse.ch, API premium de VirusTotal y revisar el origen NC de Tranco; PhishTank permite el
+uso comercial, pero no aclara la redistribución. Compartir IOCs de terceros entre organizaciones no está autorizado expresamente: conservar siempre la
+fuente de origen de cada observación y presentarlo como limitación en la memoria.
 
 Claves y URLs de abuse.ch: las exportaciones llevan la **clave en la ruta**
 (`https://urlhaus-api.abuse.ch/v2/files/exports/{AUTH_KEY}/recent.csv`); no escribirla en logs ni subirla al repo.
@@ -198,7 +219,16 @@ python load_db.py --data-dir ../data/raw --dry-run     # sin base de datos: debe
 python load_db.py --data-dir ../data/raw               # idempotente: relanzarlo dice «already loaded»
 docker compose down -v                           # borra la base de datos (empezar de cero)
 
-# Histórico de blocklist.de (ejecutar cada hora; --dns necesita dnspython):
+# Ingesta programada (AUTH_KEY y POSTGRES_PASSWORD en .env; conecta por defecto a 127.0.0.1:5433):
+python ingest.py --data-dir ../data/raw                 # lo que toque; «nothing due» si no toca nada
+python ingest.py --data-dir ../data/raw --sources urlhaus --force   # forzar una fuente (respetar sus términos)
+python ingest.py --data-dir ../data/raw --no-db         # descargar y validar sin cargar
+# Programada en Windows: tarea «VeriThreat ingest», cada hora en el minuto 7, sin ventana (conhost --headless
+# wsl.exe -d Ubuntu-26.04 -e sh .../ai/src/run_ingest.sh). Necesita sesión iniciada y Docker Desktop en marcha.
+#   Get-ScheduledTaskInfo "VeriThreat ingest"   |   Disable-ScheduledTask "VeriThreat ingest"
+#   Get-Content ai/data/raw/ingest/ingest.log -Tail 20
+
+# Histórico de blocklist.de (opcional, fuera de la ingesta; --dns necesita dnspython):
 python blocklist_history.py --verify 200 --verify-only --seed 7
 python blocklist_history.py --dns --max-dns 500
 ```
@@ -211,16 +241,23 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
 
 ## 7. Cosas NO verificadas (tratarlas como hipótesis)
 
-- Los límites de consultas del DNS de blocklist.de y de la API de VirusTotal (la clave del autor admitió ~0,4 s/consulta).
-- Términos de uso y licencias de casi todas las fuentes. Solo se leyeron los de TweetFeed (datos CC0; no verifica los
-  indicadores y no debe afirmarse que un IOC es malicioso solo por aparecer allí).
-- Qué lista de IPsum contiene los bloques /24 de blocklist.de (quizá la propia blocklist.de).
+- Los límites del DNS de blocklist.de: su documentación lo recomienda frente a la API HTTP «para una consulta
+  estable» (y sigue activo durante un DDoS), sin cifras. VirusTotal: la API pública declara 4/min y 500/día; la
+  clave del autor admite en la práctica ~0,4 s/consulta (probado en 825 consultas sin errores), pero se mantiene una
+  pausa prudente y por debajo de 500 al día.
+- Si alguna fuente (salvo TweetFeed e IPsum) permite redistribuir sus IOCs a terceros (resumen en la sección 3); en
+  PhishTank el uso comercial está permitido, pero la redistribución no se menciona. TweetFeed no verifica los
+  indicadores: no debe afirmarse que un IOC es malicioso solo por aparecer allí.
+- Qué lista de IPsum contiene los bloques /24 de blocklist.de: el README de IPsum no enumera sus 30+ fuentes, así que
+  no está confirmado que blocklist.de sea una de ellas.
 - Que `getlast.php` devuelva IPs por último ataque (no por primera aparición); su ventana máxima declarada es 50.000 s.
+  Su documentación solo dice «Get only the last added IP-Adresses», sin definir «added». No lo usa ningún script.
 - Que las IPs/hosts de plataformas compartidas o sitios comprometidos sean maliciosos como dominio (no lo son).
 - Sin validar con VirusTotal: md5/sha1, URLs de ThreatFox, IPs de ThreatFox y TweetFeed. Los grupos de URLs y
   hashes validados son pequeños (n=30–50, intervalos de ±10–15 puntos).
 - Que los hashes de TweetFeed con 0 detecciones sean artefactos benignos y no malware sin detectar.
-- La consulta DNS por IPv6 de blocklist.de no está documentada (esas IPs quedan `IPV6_UNSUPPORTED`).
+- La consulta DNS por IPv6 de blocklist.de: su documentación solo describe IPv4 (confirmado), así que esas IPs quedan
+  `IPV6_UNSUPPORTED`; no se sabe si el servicio la admite de forma no documentada.
 
 ## 8. Reglas de trabajo
 
@@ -243,10 +280,20 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
    ¿pesos de fiabilidad distintos por tipo de indicador (URL/hash frente a dominio)?
 2. ~~Esquema **PostgreSQL** y carga **idempotente**~~ (hecho el 16-10-2026, decisión 12; probado en Docker: carga
    75.511 / 74.884, segunda carga sin cambios, actualización solo con descargas más recientes, `CHECK` rechazan
-   valores mal normalizados). La sección 11 del notebook ya usa `source_sightings`. Pendiente: cargar IPsum (no hay
-   `ipsum_level*.txt` en `data/raw`; los descarga el notebook).
-3. Pipeline de ingesta programada: abuse.ch (con clave), TweetFeed (`month.csv` + `exclusive.csv`), PhishTank,
-   blocklist.de cada hora (histórico + DNS para IPs nuevas), IPsum diario.
+   valores mal normalizados). La sección 11 del notebook ya usa `source_sightings`. IPsum se carga con la ingesta.
+   Las cifras de referencia (75.511 / 74.884) son las de la exportación analizada en `data/raw`; la base de datos
+   crece con la ingesta y ya no coincide con ellas.
+3. ~~Ingesta programada~~ (`ingest.py`, 19-10-2026). Frecuencias: ThreatFox (API `get_iocs`, días desde el último
+   éxito, máx. 7), URLhaus (`recent.csv`), blocklist.de (`all.txt`) y TweetFeed (ETag) cada hora; PhishTank
+   (`online-valid.csv`, sin clave, ETag, User-Agent descriptivo) cada 6 h; IPsum cada 24 h. Cada fuente se valida y
+   falla por separado; la clave nunca sale en logs ni en `state.json`. Probada con respuestas simuladas (base
+   `verithreat_test`) y en real: primera ejecución → 108.818 observaciones y 107.576 indicadores, IPsum cargado
+   (16.066 IPs indicador con nivel). La exportación oficial de URLhaus lleva un bloque de comentarios antes de
+   `# id,...`: `load_urlhaus` salta todas las líneas iniciales con `#`. Decisiones: crudos = 3 últimas descargas
+   (el registro original ya está en `sighting.raw`); **el histórico y el DNS de blocklist.de quedan fuera** (la
+   descarga horaria ya da `last_confirmed_at` con resolución de 1 h; poca mejora para su coste). Programación:
+   Programador de tareas de Windows → `wsl.exe … run_ingest.sh` cada hora (cron dentro de WSL solo funciona con
+   WSL encendido).
 4. Entrenar el **modelo A** con partición por campaña y por tiempo, calibrar la probabilidad (el prior es artificial),
    medir con PR-AUC y limitar el peso de campañas dominantes (`shmulc`).
 5. Fórmula de **severidad**: reglas + pesos configurables, componentes guardados por separado, umbral ≥3 detecciones.
