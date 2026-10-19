@@ -39,6 +39,11 @@ verithreat/ai/
     ingest.py                    ingesta programada: descarga, valida y carga lo que toque según la frecuencia de cada
                                  fuente; instantáneas y estado en data/raw/ingest/ (3 últimas por fuente, state.json)
     run_ingest.sh                lanzador para WSL (Programador de tareas de Windows o cron); log en data/raw/ingest/
+    model_a.py                   modelo A: datos desde la base de datos, 3 evaluaciones, entrenamiento, registro en
+                                 model_version; load_artifact() y score_hosts() para puntuar (paso 5)
+    score.py                     severidad 0-100 de cada indicador (decisión 13); escribe en `score` solo los cambios
+    severity_config.json         pesos de la fórmula (fiabilidades, decaimiento, β del modelo, disputado)
+  models/model_a/<versión>/      model.joblib, metrics.json, params.json, training_hosts.csv (no se versiona)
     threatfox_download_data.py, virustotal_*_filter.py   descargadores antiguos del autor, sin traducir; sustituidos
                                  por ingest.py
   notebooks/01_exploration.ipynb exploración, calidad, solapes, clase no maliciosa, esquema común, validación VT
@@ -145,6 +150,23 @@ Las exportaciones `recent` cubren pocos días y se regeneran cada pocos minutos.
       contenido de los componentes se fija en el paso 5. Vistas `v_indicator` (resumen para las reglas) y
       `v_current_score`.
     - La normalización vive en `source_sightings()` (`loaders.py`); `load_db.py` y el notebook la usan.
+13. **Fórmula de severidad** (`score.py` + `severity_config.json`, 19-10-2026). Por indicador:
+    1. Fiabilidad `r` de cada observación = peso **por fuente y tipo** (decidido: URLs y hashes con peso propio):
+       PhishTank 0,97 (URL 1,00); URLhaus 0,59 (URL 0,73); ThreatFox 0,59 (sha256 0,90: medido 1,00 pero en parte
+       circular); TweetFeed 1,00 corroborado / 0,94 malware-C2 / 0,60 phishing / 0,28 sin etiqueta (URL 0,82; sha256
+       1,00 corroborado / 0,82); blocklist.de IP 0,96 / 0,82 / 0,36 según IPsum, cidr 0,41. Lo no validado usa el
+       peso `*` de su fuente. URLhaus `offline` × 0,8.
+    2. Decaimiento `d = 0,5^(días desde last_confirmed_at / vida media)`: IP y cidr 7 d, URL 14, dominio 30; los
+       hashes no decaen.
+    3. Evidencia `E = 1 − Π(1 − máx r·d por familia)` (OR probabilístico; la corroboración cuenta por familias). Para
+       IPs que no vienen de blocklist.de, IPsum es una familia más (0,96 con ≥3 listas, 0,82 con 1–2; por analogía,
+       sin validar; sin decaimiento).
+    4. Modelo A como señal débil en dominios y hosts de URL (no IP, no doble uso): `S = 1 − (1 − E)(1 − 0,3·p)`.
+    5. Disputado = dominio cuyo registrable está en el top 10.000 de Tranco, **salvo plataformas de doble uso**
+       (un `x.workers.dev` no hereda la popularidad): se marca y `S × 0,5`.
+    6. `severity = round(100·S)`; `components` guarda cada término, la categoría (la de la familia que más aporta) y
+       el hash de la configuración. Historial: fila nueva solo si no había puntuación, cambia ≥5 puntos o cambia
+       `disputed`. Se ejecuta tras cada ingesta horaria (`run_ingest.sh`, ~15 s).
 
 ## 5. Cifras de referencia
 
@@ -182,7 +204,7 @@ Las exportaciones `recent` cubren pocos días y se regeneran cada pocos minutos.
   TweetFeed ≈0,61 (≈1,00 corroborado / 0,94 malware-C2 / 0,60 phishing / 0,28 sin etiqueta); IPs individuales
   0,96 / 0,82 / 0,36 según IPsum; bloques /24 ≈0,41. Son pesos de **dominio/IP**; para URLs y hashes la evidencia
   (tabla) es más alta, pero con n=30–50 y sin decidir aún si se usan pesos distintos por tipo.
-- **Modelo A (ensayo rápido, `learning_trial.py`, semilla 0)**: PR-AUC 0,44 con 100 registros → 0,64–0,65 con
+- **Modelo A, ensayo con la instantánea de `data/raw` (`learning_trial.py`, semilla 0)**: PR-AUC 0,44 con 100 registros → 0,64–0,65 con
   300 → 0,72 con 3.000 → 0,78 con 10.000 (ROC-AUC 0,88) → 0,80 con todos (ROC-AUC 0,90; test de 12.158 con 17,6 % de
   maliciosos). Sin abuse.ch en el entrenamiento, ROC-AUC 0,79 (sin PhishTank 0,92,
   sin TweetFeed 0,85): **la variedad pesa más que el volumen**. Un ensayo anterior daba 0,87 porque incluía
@@ -190,6 +212,16 @@ Las exportaciones `recent` cubren pocos días y se regeneran cada pocos minutos.
   learning_rate=0.1)`, `GroupShuffleSplit` 80/20 por registrable, 3 repeticiones por tamaño, 51 rasgos (11 léxicos +
   40 TLD one-hot elegidos sobre todo el conjunto: pequeña filtración que el modelo definitivo debe evitar). Semillas
   1 y 2: PR-AUC con todos 0,80–0,81, mismo orden PhishTank > TweetFeed > abuse.ch. Las filas de 100–300 son frágiles.
+- **Modelo A desplegado** (`model_a.py`, versión activa `20261019T173751Z`, entrenada en WSL con scikit-learn 1.9.1;
+  datos de la base de datos a 19-10-2026: 14.871 hosts maliciosos de 12.888 registrables, del 10-7 al 19-10-2026, y
+  49.717 no maliciosos; prevalencia en test 0,22). Por registrable: PR-AUC 0,806 / ROC-AUC 0,892 (sin ponderar
+  campañas: igual, porque `DUAL_USE` ya quitó las concentraciones). **Por tiempo** (20 % más reciente de cada
+  familia): PR-AUC 0,810 / ROC-AUC 0,887, sin pérdida. Sin abuse.ch 0,804 de ROC-AUC, sin PhishTank 0,926, sin
+  TweetFeed 0,837 (mismo orden que el ensayo). La primera versión (`20261019T153149Z`, scikit-learn 1.8.0, PR-AUC
+  0,816 / temporal 0,808) queda inactiva: **un modelo solo se carga con la versión de scikit-learn que lo entrenó**,
+  así que se entrena en el `.venv` de WSL, que es donde se usa; `score.py` lo comprueba.
+  TLD elegidos solo con el entrenamiento (sin la filtración del ensayo). Platt no mejora el Brier (0,0878 → 0,0878):
+  **sin calibración**, y el modelo final usa el 100 % de los datos. Reproducible exactamente con `--from-hosts`.
 - **blocklist.de por DNS** (`bl.blocklist.de`, 200 IPs de `all.txt`): las 131 individuales tienen todas `Last-Attack`
   (mediana 26,7 h, siempre <48 h) y servicio coherente con las listas; las 69 de bloques no tienen fecha.
 - Las consultas a VirusTotal se hicieron el 13 y el 14 de octubre de 2026 (415 y 410); no se aprecia efecto del día.
@@ -227,6 +259,14 @@ python ingest.py --data-dir ../data/raw --no-db         # descargar y validar si
 # wsl.exe -d Ubuntu-26.04 -e sh .../ai/src/run_ingest.sh). Necesita sesión iniciada y Docker Desktop en marcha.
 #   Get-ScheduledTaskInfo "VeriThreat ingest"   |   Disable-ScheduledTask "VeriThreat ingest"
 #   Get-Content ai/data/raw/ingest/ingest.log -Tail 20
+
+# Modelo A (necesita scikit-learn y tldextract; conecta a la base de datos como load_db.py):
+python model_a.py --data-dir ../data/raw --activate     # evalúa, entrena, guarda en ai/models y la activa
+python model_a.py --from-hosts ../models/model_a/<versión>/training_hosts.csv --output-dir /tmp/repro   # reproducir
+
+# Severidad (la ejecuta run_ingest.sh tras cada ingesta; usa el modelo A activo):
+python score.py --data-dir ../data/raw --dry-run        # calcula y resume por categoría y tipo, sin escribir
+python score.py --data-dir ../data/raw                  # guarda solo los cambios (≥5 puntos o disputado)
 
 # Histórico de blocklist.de (opcional, fuera de la ingesta; --dns necesita dnspython):
 python blocklist_history.py --verify 200 --verify-only --seed 7
@@ -294,9 +334,16 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
    descarga horaria ya da `last_confirmed_at` con resolución de 1 h; poca mejora para su coste). Programación:
    Programador de tareas de Windows → `wsl.exe … run_ingest.sh` cada hora (cron dentro de WSL solo funciona con
    WSL encendido).
-4. Entrenar el **modelo A** con partición por campaña y por tiempo, calibrar la probabilidad (el prior es artificial),
-   medir con PR-AUC y limitar el peso de campañas dominantes (`shmulc`).
-5. Fórmula de **severidad**: reglas + pesos configurables, componentes guardados por separado, umbral ≥3 detecciones.
+4. ~~Entrenar el **modelo A**~~ (`model_a.py`, 19-10-2026; cifras en la sección 5). Decisiones: datos desde la base
+   de datos con la lista exacta de hosts guardada por versión; partición por registrable, por tiempo (20 % más
+   reciente de cada familia) y por familia; ponderación por registrable (hoy sin efecto, se mantiene); **sin
+   calibración** (no mejoraba el Brier); `p_malicious` se usa como ordenación. Reentrenar cuando la base de datos
+   haya crecido bastante (p. ej. cada mes) y activar la nueva versión solo si su PR-AUC temporal no empeora.
+   Entrenar siempre en el `.venv` de WSL (scikit-learn 1.9.1).
+5. ~~Fórmula de **severidad**~~ (`score.py`, 19-10-2026; decisión 13). Primera puntuación: 108.319 indicadores, 70
+   disputados, 23.409 con término del modelo. Mediana por categoría y tipo: URLs de phishing 99, sha256 de
+   distribución 90, URLs de distribución 58, dominios C2 60, IPs de ataque 36 (p90 96). Pendiente: justificar los
+   pesos en la memoria y revisar la distribución con unos días de ingesta.
 6. Integración con la ingesta Java y con Fabric (hash canónico: tipo + valor normalizado + fuente + timestamp).
 7. Mantenimiento: revisar `DUAL_USE` (candidatos vistos: `upload.cc`, `replit.dev`, `trycloudflare.com`,
    `wasmer.app`, `backblazeb2.com`); repetir la validación con

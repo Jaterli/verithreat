@@ -23,6 +23,8 @@ sketch
 ai/data/raw/
 # Muestras y resultados de VirusTotal, históricos y copias de trabajo
 *.csv
+# Versiones entrenadas del modelo A (binarios y listas de hosts; se regeneran con model_a.py --from-hosts)
+ai/models/
 
 ### python ###
 .venv/

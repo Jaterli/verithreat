@@ -1,0 +1,21 @@
+{
+  "_comment": "Pesos de la fórmula de severidad (score.py). Fiabilidades = tasa de confirmación con >=3 detecciones en VirusTotal (CLAUDE.md, sección 5). Clave '*' = cualquier tipo sin peso propio. TweetFeed se gradúa por 'corroborated' o por categoría; blocklist.de por nivel de IPsum. Cambiar un valor cambia la versión de la configuración que se guarda con cada puntuación.",
+  "reliability": {
+    "phishtank": {"*": 0.97, "url": 1.00},
+    "urlhaus": {"*": 0.59, "url": 0.73},
+    "threatfox": {"*": 0.59, "sha256": 0.90},
+    "tweetfeed": {
+      "*": {"corroborated": 1.00, "c2": 0.94, "malware": 0.94, "phishing": 0.60, "unspecified": 0.28},
+      "url": 0.82,
+      "sha256": {"corroborated": 1.00, "*": 0.82}
+    },
+    "blocklist.de": {"ip": {"ipsum_3+": 0.96, "ipsum_1-2": 0.82, "ipsum_0": 0.36}, "cidr": 0.41}
+  },
+  "_comment_ipsum": "IPsum como familia de evidencia propia para las IPs que NO vienen de blocklist.de (con ellas ya gradúa su fiabilidad). Pesos medidos en IPs de blocklist.de y aplicados por analogía: sin validar para IPs de otras fuentes. Sin decaimiento: es el nivel de la última descarga diaria.",
+  "ipsum_signal": {"ipsum_3+": 0.96, "ipsum_1-2": 0.82},
+  "status_factor": {"offline": 0.8},
+  "half_life_days": {"ip": 7, "cidr": 7, "url": 14, "domain": 30, "sha256": null, "md5": null, "sha1": null},
+  "model_beta": 0.3,
+  "disputed": {"tranco_top": 10000, "factor": 0.5},
+  "history_min_change": 5
+}

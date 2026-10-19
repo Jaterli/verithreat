@@ -1,6 +1,6 @@
 # VeriThreat · Fase de datos: recopilación, validación y fiabilidad de las fuentes de Threat Intelligence
 
-*Documento de fase del TFM · Octubre 2026 · Estado: fuentes definitivas; validación con VirusTotal completa (825 indicadores: dominios, IPs, URLs y hashes)*
+*Documento de fase del TFM · Octubre 2026 · Estado: fuentes definitivas; validación con VirusTotal completa (825 indicadores: dominios, IPs, URLs y hashes); desde el 19-10-2026, base de datos, ingesta horaria, modelo A desplegado y severidad en funcionamiento (sección 14)*
 
 ## 1. Resumen
 
@@ -16,6 +16,8 @@ Cifras clave:
 - **825 indicadores consultados a VirusTotal**: 818 con análisis y 7 que VirusTotal nunca había visto (6 hashes y 1 URL).
 - **Confirmación con ≥3 detecciones**: PhishTank 97 % (dominios) y 100 % (URLs); abuse.ch 59 % (dominios), 73 % (URLs de URLhaus) y 100 % (hashes de ThreatFox); TweetFeed 61 % (dominios), 82 % (URLs) y 91 % (hashes); IPs individuales de blocklist.de 70 %.
 - **Se descartan MalwareBazaar y ThreatCluster**, además de otras fuentes evaluadas (sección 3).
+- **Términos de uso**: el TFM, académico y sin ánimo de lucro, está cubierto; un uso comercial necesitaría licencias, y ninguna fuente salvo TweetFeed e IPsum autoriza expresamente redistribuir sus indicadores (sección 3.4).
+- **Ya en funcionamiento** (sección 14): ingesta horaria en PostgreSQL, modelo A con PR-AUC 0,81 también sobre los dominios más recientes, y severidad de 0 a 100 explicable para cada indicador.
 
 Tres ideas para recordar:
 
@@ -27,7 +29,7 @@ Tres ideas para recordar:
 
 El informe del proyecto define una plataforma con microservicios en Java, un motor de IA para puntuar el riesgo de los IOCs y una blockchain permisionada para garantizar su trazabilidad. Uno de los criterios de éxito exige que la puntuación de riesgo sea **coherente y explicable**, lo que obliga a conocer con precisión qué datos alimentan el score y qué fiabilidad tienen.
 
-Esta fase cubre la recopilación y preparación de los datos, la decisión sobre qué etiqueta aprende el modelo, la selección de fuentes y la validación externa. Quedan fuera, y son fases posteriores, la ingesta automática, la base de datos definitiva, la integración con la blockchain y el dashboard.
+Esta fase cubre la recopilación y preparación de los datos, la decisión sobre qué etiqueta aprende el modelo, la selección de fuentes y la validación externa. La base de datos, la ingesta automática, el modelo desplegado y la fórmula de severidad, construidos después a partir de estas decisiones, se resumen en la sección 14. Quedan fuera, y son fases posteriores, la integración con los microservicios Java y con la blockchain, y el dashboard.
 
 El documento está pensado para cuatro usos: implementar la fase, conocer su fiabilidad, mejorarla ahora o en el futuro y explicarla a posibles interesados en la plataforma.
 
@@ -74,6 +76,22 @@ Cada fuente se evaluó con los mismos cinco criterios, y solo se mantiene si apo
 | CERT.PL, CERT-FR, Botvrij, SiberKapan, OpenPhish y Phishing Army | No analizadas (no accesibles desde el entorno) o marginales frente a PhishTank y TweetFeed | Si aparece un hueco medible |
 
 Se descartan también, como enfoque: usar confianza, estado o familia como etiqueta del modelo, y las detecciones de VirusTotal como característica de entrenamiento (sección 9); y usar Tranco o PhishTank completos, que se emplean filtrados (top 50.000 y 90 días).
+
+### 3.4 Términos de uso
+
+Se leyeron en las páginas oficiales de cada fuente el 17 de octubre de 2026:
+
+| Fuente | Uso permitido | Límites relevantes para la ingesta |
+| --- | --- | --- |
+| abuse.ch (ThreatFox, URLhaus) | Gratis solo para usuarios autenticados y fines no lucrativos; el uso comercial requiere una suscripción gestionada por Spamhaus | Volumen «razonable», sin cifra; prohíbe la recolección masiva automatizada; las exportaciones de URLhaus se generan cada 5 minutos y no deben pedirse más a menudo |
+| blocklist.de | Gratis, «salvo descarga de las listas con demasiado volumen» | `all.txt` contiene las últimas 48 horas y se regenera cada 30 minutos |
+| PhishTank (Cisco Talos) | Gratis; su FAQ permite el uso comercial y no comercial. Rigen los General Terms de Cisco, con una licencia para beneficio propio que prohíbe proporcionar el servicio a terceros | Sin clave de aplicación, «unas pocas descargas al día»; User-Agent descriptivo obligatorio; los datos se actualizan cada hora |
+| TweetFeed | Datos CC0; no verifica los indicadores | Ficheros regenerados cada 15 minutos; pide peticiones condicionales |
+| IPsum | The Unlicense (dominio público) | Se actualiza una vez al día |
+| Tranco | Sin licencia propia declarada; combina fuentes con licencias CC BY, CC BY-SA y CC BY-NC (no comercial) | — |
+| VirusTotal (API pública) | Prohibida en productos o servicios comerciales | 4 peticiones por minuto y 500 al día |
+
+Consecuencias: el TFM está cubierto. Un despliegue comercial necesitaría la suscripción de abuse.ch, la API de pago de VirusTotal y revisar el origen no comercial de Tranco. **Ninguna fuente, salvo TweetFeed e IPsum, autoriza expresamente redistribuir sus indicadores a terceros**, que es lo que hace una red de intercambio entre organizaciones. Por eso cada observación conserva su fuente de origen, VirusTotal se usa solo para la validación académica, y esta cuestión se presenta como una limitación (sección 12).
 
 ## 4. Método seguido
 
@@ -235,9 +253,9 @@ No se puede afirmar que un indicador sea malicioso con certeza, que las diferenc
 
 - **Umbral de tres detecciones** para confirmar un indicador o para disputar un dominio popular. Con una sola detección el ruido de un motor aislado es alto.
 - **Peso de fiabilidad por fuente** igual a su tasa de confirmación con ≥3 detecciones en dominios e IPs: PhishTank ≈0,97 y abuse.ch ≈0,59. TweetFeed, graduado: ≈1,00 si está corroborado, ≈0,94 con etiqueta de malware o C2, ≈0,60 de phishing y ≈0,28 sin etiqueta. blocklist.de, graduado por IPsum: ≈0,96 con tres o más listas, ≈0,82 con una o dos y ≈0,36 si no aparece; los bloques /24, ≈0,41.
-- **URLs y hashes:** la evidencia es más alta que la de los dominios de la misma fuente (sección 8.1). Queda por decidir si se usan pesos distintos por tipo de indicador o el de la fuente como cota inferior conservadora. En cualquier caso, `not_found` en VirusTotal no rebaja un indicador: solo significa que nadie lo ha enviado a analizar.
+- **URLs y hashes:** la evidencia es más alta que la de los dominios de la misma fuente (sección 8.1). Se decidió usar pesos propios por tipo (por ejemplo, URLs de URLhaus 0,73 frente a 0,59 en dominios) y, en los tipos sin validar, el peso de la fuente; los sha256 de ThreatFox se rebajan a 0,90 por la circularidad (fórmula completa en el documento «Etiqueta de entrenamiento y score de riesgo»). En cualquier caso, `not_found` en VirusTotal no rebaja un indicador: solo significa que nadie lo ha enviado a analizar.
 - Son valores preliminares y deben ser **configurables**, porque no hay una verdad contra la que validarlos.
-- **Disputado** significa que el indicador sigue almacenado, pero con severidad rebajada y marcado para revisión: un dominio popular con ≥3 detecciones, una IP de infraestructura legítima o un indicador cuya etiqueta contradice otra señal.
+- **Disputado** significa que el indicador sigue almacenado, pero con severidad rebajada y marcado para revisión: un dominio popular con ≥3 detecciones, una IP de infraestructura legítima o un indicador cuya etiqueta contradice otra señal. En la implementación (sección 14.4), como VirusTotal no se consulta para cada indicador, se marca todo dominio malicioso cuyo registrable está en el top 10.000 de Tranco, salvo los subdominios de plataformas de doble uso, y su severidad se reduce a la mitad.
 - La severidad solo se compara dentro de una misma categoría de amenaza.
 
 ## 9. Modelo de IA: etiqueta y volumen de datos
@@ -322,6 +340,11 @@ No se necesitan más fuentes ahora. Añadir más volumen del mismo tipo aporta p
 | `optional_loaders.py` | Cargadores de MalwareBazaar y ThreatCluster, descartadas pero conservadas por si se reconsideran |
 | `vt_sampling.py` | Construcción de la muestra y consulta a VirusTotal, con reintentos y reanudación |
 | `learning_trial.py` | Ensayo del modelo A: curva de aprendizaje y generalización sin una fuente (sección 9.3); salida de referencia en `ensayo_aprendizaje_referencia.txt` |
+| `db/schema.sql`, `docker-compose.yml` | Esquema de PostgreSQL y contenedor de la base de datos (sección 14.1) |
+| `load_db.py` | Carga idempotente de las fuentes en PostgreSQL |
+| `ingest.py`, `run_ingest.sh` | Ingesta programada y su lanzador horario (sección 14.2) |
+| `model_a.py` | Entrenamiento, evaluación y registro del modelo A desplegado (sección 14.3) |
+| `score.py`, `severity_config.json` | Severidad de cada indicador y sus pesos (sección 14.4) |
 
 ### 11.2 Pasos
 
@@ -342,6 +365,15 @@ python vt_sampling.py --data-dir data/raw --pause 16 --max-queries 200
 ```
 
 6. **Reanudar.** Relanzar el mismo comando: solo consulta lo que falta. El resumen por grupo (con la cobertura y las tasas de detección) se muestra al terminar y los datos quedan en `vt_results.csv`.
+7. **Base de datos y sistema en funcionamiento** (opcional para reproducir las cifras de este documento). Con Docker en marcha y la contraseña en `.env`:
+
+```
+docker compose up -d --wait postgres
+python load_db.py --data-dir data/raw --dry-run      # debe dar 75.511 observaciones y 74.884 indicadores
+python ingest.py --data-dir data/raw                 # descarga y carga lo que toque
+python model_a.py --data-dir data/raw --activate     # entrena, evalúa y activa una versión del modelo
+python score.py --data-dir data/raw                  # calcula y guarda la severidad
+```
 
 ### 11.3 Parámetros y avisos
 
@@ -350,7 +382,8 @@ python vt_sampling.py --data-dir data/raw --pause 16 --max-queries 200
 - Si ya existe una muestra anterior, el script la reutiliza: descarta los grupos obsoletos y las plataformas de doble uso y añade los grupos que falten (TweetFeed, URLs, hashes), sin repetir lo ya consultado.
 - La clave puede ir también en un fichero `.env` fuera del control de versiones (se lee si `python-dotenv` está instalado; es opcional).
 - Las claves de abuse.ch y de VirusTotal van fuera del repositorio. Las URLs de exportación de abuse.ch llevan la clave en la ruta, por lo que no deben escribirse en logs.
-- IPsum se descarga de GitHub (sin clave); su licencia no se ha verificado. De TweetFeed se leyeron sus términos (datos CC0, sin verificar los indicadores); de las demás fuentes no.
+- IPsum se descarga de GitHub, sin clave y con licencia The Unlicense. Los términos de todas las fuentes están resumidos en la sección 3.4.
+- Las cifras de este documento salen de la exportación analizada en `data/raw`. La base de datos crece cada hora con la ingesta, así que sus totales ya no coinciden con ellas.
 
 ## 12. Limitaciones y riesgos
 
@@ -358,25 +391,81 @@ python vt_sampling.py --data-dir data/raw --pause 16 --max-queries 200
 - **Fuentes poco independientes:** solo 41 indicadores de 74.884 aparecen en dos familias de fuentes distintas, y ThreatFox y URLhaus comparten ecosistema.
 - **TweetFeed tiene una fiabilidad muy variable:** sin etiqueta y sin corroborar, sus dominios se confirman poco (28 %). Sus propios términos advierten de que no verifica los indicadores y de que no debe afirmarse que un IOC es malicioso solo por aparecer allí.
 - **Ventanas temporales distintas** y fuentes sin fecha (blocklist.de): no se puede medir actividad ni aplicar decaimiento en todas.
-- **Concentración:** una campaña del 44 % en URLhaus, una fuente del 93 % en IPs individuales y plataformas compartidas en PhishTank y TweetFeed. Hay que limitar el peso por campaña y por fuente al entrenar.
+- **Concentración:** una campaña del 44 % en URLhaus, una fuente del 93 % en IPs individuales y plataformas compartidas en PhishTank y TweetFeed. El modelo desplegado pondera por dominio registrable, aunque hoy no cambia el resultado porque la lista de doble uso ya eliminó las grandes concentraciones.
 - **La lista de doble uso necesita mantenimiento:** aún aparecen plataformas sin recoger (por ejemplo `upload.cc`, `replit.dev`, `trycloudflare.com`, `wasmer.app` o `backblazeb2.com`).
 - **Muestras pequeñas por grupo:** con 66 dominios el intervalo de confianza ronda ±10 puntos, y con 30–50 URLs o hashes, ±10–15. Para comparar familias con ±5 puntos harían falta unos 400 por grupo.
 - **Validación parcial por tipo:** los md5, sha1, las URLs e IPs de ThreatFox y las IPs de TweetFeed no se han validado. VirusTotal no conoce una parte de los hashes (10 % en TweetFeed), y el acuerdo en hashes de ThreatFox es en parte circular. Al descartar MalwareBazaar se pierde el 17 % de los sha256 y la vinculación entre md5, sha1 y sha256.
-- **El modelo A** aprende lo que se parece a lo ya conocido, su clase no maliciosa son dominios populares y el score debe leerse como una ordenación, no como una probabilidad. Los resultados del ensayo de aprendizaje son indicativos.
+- **El modelo A** aprende lo que se parece a lo ya conocido, su clase no maliciosa son dominios populares y su probabilidad debe leerse como una ordenación, no como un riesgo real. Por eso en la severidad es solo una señal débil (sección 14.4).
 - **Hosts de plataformas y sitios comprometidos:** un dominio legítimo comprometido y el subdominio de un usuario de una plataforma no son dominios maliciosos, aunque aparezcan en una URL de malware.
-- **Datos personales y licencias:** las IPs y los nombres de usuario de los reporteros pueden considerarse datos personales según el contexto (RGPD), algo a valorar al compartirlos entre organizaciones, y los términos de uso de la mayoría de las fuentes no se han analizado a fondo.
+- **Datos personales y licencias:** las IPs y los nombres de usuario de los reporteros pueden considerarse datos personales según el contexto (RGPD), algo a valorar al compartirlos entre organizaciones. Los términos de uso cubren el TFM, pero no autorizan expresamente a redistribuir los indicadores de la mayoría de las fuentes a terceros, y un uso comercial necesitaría licencias (sección 3.4). Una salida, si hiciera falta, sería compartir entre organizaciones solo los indicadores propios y que cada una descargue los feeds públicos.
 - **Dependencia de servicios externos:** TweetFeed se alimenta de feeds de Twitter/X y es un proyecto personal sin garantía de disponibilidad, IPsum depende de GitHub y VirusTotal de su cuota; los formatos pueden cambiar, como el paso de abuse.ch a claves de acceso.
 
 ## 13. Próximos pasos
 
-1. Definir el esquema de PostgreSQL con el modelo de indicador y observación (incluido el tipo `cidr`), y una carga idempotente.
-2. Entrenar el modelo A con partición por campaña y por tiempo, calibrar la probabilidad y limitar el peso por campaña.
-3. Fijar pesos de reglas configurables, incluida la graduación por IPsum y por etiqueta en TweetFeed, decidir si URLs y hashes llevan pesos propios, y documentar la fórmula de severidad.
-4. Revisar periódicamente la lista de doble uso con los datos nuevos (candidata nueva: `upload.cc`).
+Hechos: esquema de PostgreSQL y carga idempotente, ingesta programada, modelo A desplegado y fórmula de severidad (sección 14). Quedan:
+
+1. Integrar la base de datos y el score con los microservicios Java (consulta y API) y con Hyperledger Fabric (hash canónico y procedencia de cada indicador).
+2. Revisar la distribución de la severidad con unos días de ingesta y justificar los pesos en la memoria.
+3. Reentrenar el modelo A periódicamente con la base de datos y activar una versión nueva solo si su PR-AUC temporal no empeora.
+4. Revisar periódicamente la lista de doble uso con los datos nuevos (candidatos: `upload.cc`, `replit.dev`, `trycloudflare.com`, `wasmer.app`, `backblazeb2.com`).
 5. Repetir la validación con VirusTotal cuando cambie el conjunto de fuentes o pasen meses; si hace falta, ampliarla a md5, sha1 y a las IPs de ThreatFox y TweetFeed.
 6. Reconsiderar una fuente descartada solo si aparece un hueco medible (sección 10).
 
-## 14. Glosario
+## 14. De los datos a la plataforma: base de datos, ingesta, modelo y severidad
+
+Una vez cerrada la fase de datos, sus decisiones se llevaron a un primer sistema en funcionamiento (16–19 de octubre de 2026). El detalle de la fórmula de severidad y del modelo está en el documento «Etiqueta de entrenamiento y score de riesgo»; aquí se resume lo construido y se enlaza con lo medido en este documento.
+
+### 14.1 Base de datos
+
+PostgreSQL en Docker (`db/schema.sql`), con el modelo de indicador y observación de la sección 5.2:
+
+| Tabla | Contenido |
+| --- | --- |
+| `source` | Catálogo de fuentes con su familia (ThreatFox y URLhaus = abuse.ch) |
+| `download` | Una fila por fichero crudo cargado, identificado por su sha256: volver a cargar el mismo contenido no cambia nada |
+| `indicator` | Un indicador único por tipo y valor normalizado, con comprobaciones de formato por tipo. La unicidad se apoya en una huella sha256 del valor, porque hay URLs de PhishTank de más de 25.000 caracteres |
+| `sighting` | Una observación por registro de cada fuente, con su fecha, la última vez que la fuente seguía listándolo y el registro original |
+| `ipsum_signal` | Nivel de IPsum de cada IP en cada descarga diaria |
+| `model_version`, `score` | Versiones del modelo A y el historial de severidades con sus componentes |
+
+La carga (`load_db.py`) reproduce exactamente las cifras de la sección 6 (75.511 observaciones y 74.884 indicadores) y es idempotente: una segunda carga no cambia nada, y una descarga más antigua no sobrescribe el estado de una más reciente.
+
+### 14.2 Ingesta programada
+
+`ingest.py` se ejecuta cada hora (Programador de tareas de Windows, dentro de WSL) y solo descarga lo que toca según los términos de cada fuente (sección 3.4):
+
+| Fuente | Qué se descarga | Frecuencia |
+| --- | --- | --- |
+| ThreatFox | API `get_iocs`, días desde la última descarga correcta (máximo 7) | 1 h |
+| URLhaus | Exportación `recent.csv` | 1 h |
+| blocklist.de | `all.txt` | 1 h |
+| TweetFeed | `month.csv` y `exclusive.csv`, con petición condicional | 1 h |
+| PhishTank | `online-valid.csv`, sin clave, con User-Agent descriptivo y petición condicional | 6 h |
+| IPsum | Los 8 ficheros de niveles | 24 h |
+
+Cada fuente se valida antes de cargarse y falla por separado; la clave de abuse.ch no aparece nunca en los registros. Se guardan las 3 últimas descargas de cada fuente: el registro original de cada observación ya queda en la base de datos. El histórico y la consulta DNS de blocklist.de se dejaron fuera: la descarga horaria ya da la última confirmación con resolución de una hora, y el DNS añadía cientos de consultas por hora con poca mejora.
+
+La primera ejecución real llevó la base de datos de 75.511 a 108.818 observaciones y de 74.884 a 107.576 indicadores, y cargó IPsum (16.066 IPs indicador con nivel). Desde entonces, cada hora añade entre unas decenas y unos cientos de indicadores nuevos. Por eso **la base de datos ya no coincide con las cifras de este documento**, que corresponden a la exportación analizada y se siguen pudiendo reproducir con ella.
+
+Un hallazgo de la primera ejecución: la exportación oficial de URLhaus lleva un bloque de comentarios antes de la cabecera, que la copia analizada no tenía; el cargador se corrigió para aceptar ambos formatos.
+
+### 14.3 Modelo A desplegado
+
+`model_a.py` entrena con la base de datos y evalúa de tres formas: por dominio registrable, por tiempo (el 20 % más reciente de cada familia como test) y dejando fuera una familia. La primera versión activa (19-10-2026) obtiene una PR-AUC de 0,806 por registrable y de **0,810 por tiempo**: no pierde calidad con los dominios más recientes. El orden entre familias es el mismo que en el ensayo de la sección 9.3 (lo más difícil de generalizar sigue siendo abuse.ch).
+
+Tres decisiones salieron de los datos:
+
+- **Sin calibración:** Platt no mejoró el Brier (0,0878 en ambos casos), así que el modelo final usa todos los datos y su probabilidad se usa como ordenación.
+- **Ponderación por campaña sin efecto hoy** (PR-AUC 0,806 con y sin ella): la lista de doble uso ya eliminó las grandes concentraciones. Se mantiene por si aparece otra campaña dominante.
+- **Filtración corregida:** los TLD que se codifican como rasgo se eligen solo con los datos de entrenamiento.
+
+Cada versión guarda la lista exacta de hosts y se puede reconstruir idéntica. Un modelo de scikit-learn solo se carga con la versión de la librería que lo entrenó, así que se entrena en el mismo entorno en el que se usa.
+
+### 14.4 Severidad
+
+`score.py` calcula después de cada ingesta una severidad de 0 a 100 para cada indicador. Combina la fiabilidad medida de cada fuente para cada tipo de indicador (sección 8.1), un decaimiento por antigüedad, la corroboración entre familias, IPsum y, como señal débil, el modelo A. Los dominios populares se marcan como disputados (sección 8.4). Cada componente se guarda por separado y todos los pesos son configurables. La primera puntuación cubrió 108.319 indicadores; las medianas van de 36 (IPs que atacan servicios) a 99 (URLs de phishing de PhishTank), con 70 dominios disputados.
+
+## 15. Glosario
 
 - **IOC (indicador de compromiso):** dato que delata actividad maliciosa, como un dominio, una URL, un hash o una IP.
 - **Observación (sighting):** cada vez que una fuente reporta un indicador.
@@ -385,6 +474,8 @@ python vt_sampling.py --data-dir data/raw --pause 16 --max-queries 200
 - **Doble uso:** servicio compartido (plataforma, acortador, almacenamiento) cuyos hosts pertenecen a usuarios, no al servicio.
 - **Dominio registrable:** la parte que se registra de un nombre, por ejemplo `ejemplo.com` en `www.ejemplo.com`.
 - **Disputado:** indicador cuya etiqueta contradice otra señal y que se mantiene con severidad rebajada.
+- **Decaimiento:** reducción del peso de una observación a medida que pasa el tiempo desde la última vez que la fuente seguía listándola.
+- **Idempotente:** una operación que, repetida con los mismos datos, no cambia nada.
 - **Fuga de información:** cuando el modelo usa como entrada algo que revela la respuesta y da una precisión engañosa.
 - **PR-AUC y ROC-AUC:** medidas de calidad de un clasificador (de 0 a 1); la PR-AUC se compara con la proporción de positivos del test.
 - **IC 95 % (Wilson):** rango en el que, con un 95 % de seguridad, se encuentra la proporción real.

@@ -1,6 +1,6 @@
 # Etiqueta de entrenamiento y score de riesgo para VeriThreat
 
-*Documento de decisión de diseño, actualizado con las fuentes definitivas · Proyecto TFM «VeriThreat» · Octubre 2026*
+*Documento de decisión de diseño · Proyecto TFM «VeriThreat» · Octubre 2026 · Estado (19-10-2026): modelo A desplegado y fórmula de severidad implementada y en ejecución horaria*
 
 ## 1. Contexto y finalidad
 
@@ -43,7 +43,7 @@ Nuestro problema es que los datos no traen una respuesta natural: todo lo que de
 
 ## 5. Decisión: opción A
 
-Se elige la opción A porque es la única que cubre todas las fuentes y encaja con el objetivo de puntuar el riesgo de un IOC. La probabilidad de que un dominio sea malicioso se transforma en un score de 0 a 100.
+Se elige la opción A porque es la única que cubre todas las fuentes y encaja con el objetivo de puntuar el riesgo de un IOC. La probabilidad de que un dominio sea malicioso es uno de los componentes del score de 0 a 100, junto con la fiabilidad de las fuentes, la actividad y la corroboración (sección 7).
 
 ### 5.1 Construcción de la clase no maliciosa
 
@@ -69,11 +69,11 @@ La confianza y el estado no sirven como etiqueta, pero sí como componentes de l
 
 ### 6.1 Confianza de ThreatFox (opción B)
 
-Depende sobre todo de **quién reporta**, no del indicador: 39 de los 57 reporteros usan siempre el mismo valor y la media por reportero va de 50,7 a 96,1. Mide la **fiabilidad de la fuente**, no la peligrosidad. Como característica de entrenamiento introduciría el sesgo del reportero; como **peso de la fuente** sí es útil.
+Depende sobre todo de **quién reporta**, no del indicador: 39 de los 57 reporteros usan siempre el mismo valor y la media por reportero va de 50,7 a 96,1. Mide la **fiabilidad de la fuente**, no la peligrosidad. Como característica de entrenamiento introduciría el sesgo del reportero. Al final tampoco se usa como peso: la fiabilidad de ThreatFox ya se mide como fuente con VirusTotal, y la confianza por reportero no se ha validado (sección 7.2).
 
 ### 6.2 Estado de URLhaus (opción C)
 
-Depende del **tiempo transcurrido** desde el reporte: 98 % de URLs online el primer día, 37 % entre 1 y 3 días, 20 % entre 3 y 7, 8 % entre 7 y 14 y 5 % entre 14 y 31. Es una foto del momento de la exportación que decae con el tiempo, así que se usa como factor de **actividad** con decaimiento temporal y alimenta el campo `estado`. Hay que refrescarlo periódicamente.
+Depende del **tiempo transcurrido** desde el reporte: 98 % de URLs online el primer día, 37 % entre 1 y 3 días, 20 % entre 3 y 7, 8 % entre 7 y 14 y 5 % entre 14 y 31. Es una foto del momento de la exportación que decae con el tiempo, así que se usa como factor de **actividad**: una URL `offline` pesa 0,8 de su fiabilidad, y la ingesta horaria la refresca. El decaimiento general se mide con la última vez que cada fuente seguía listando el indicador (sección 7.1).
 
 ### 6.3 IPsum: corroboración para las IPs
 
@@ -87,18 +87,49 @@ IPsum indica en cuántas listas públicas aparece cada IP. Cruzado con las 141 I
 
 La correlación de Spearman es 0,71. El 70 % medio de las IPs individuales escondía una variación enorme, así que el nivel de IPsum gradúa la fiabilidad de cada IP. Los grupos son pequeños y los motores de VirusTotal probablemente consumen listas parecidas: es una señal relativa, no una verdad.
 
-## 7. Cobertura del modelo y diseño en dos capas
+## 7. Cobertura del modelo y fórmula de severidad
 
-El modelo A **solo puntúa dominios** (y los hosts extraídos de las URLs), porque Tranco solo contiene dominios. Un hash es una cadena aleatoria sin rasgos de los que aprender y las IPs no tienen una clase negativa equivalente. Por eso las 18.338 IPs individuales, los 30 bloques /24 y los 6.307 sha256, 273 md5 y 176 sha1 reciben su severidad solo de las reglas.
+El modelo A **solo puntúa dominios** (y los hosts extraídos de las URLs), porque Tranco solo contiene dominios. Un hash es una cadena aleatoria sin rasgos de los que aprender y las IPs no tienen una clase negativa equivalente. Por eso las IPs, los bloques /24 y los hashes reciben su severidad solo de las reglas.
 
-El diseño tiene dos capas:
+El diseño tiene dos capas, implementadas en `model_a.py` y `score.py`:
 
-1. **Modelo A.** Produce `p_malicioso` para dominios, entrenado solo con características del propio dominio.
-2. **Reglas.** Combinan `p_malicioso`, la fiabilidad de la fuente, la actividad, el número de fuentes independientes y, en las IPs, el nivel de IPsum en un `severidad` de 0 a 100. Cuando el modelo A no aplica, ese término se omite y se reponderan los demás.
+1. **Modelo A.** Produce `p_malicioso` para dominios y hosts de URL, entrenado solo con características del propio dominio.
+2. **Reglas.** Combinan la fiabilidad de cada fuente, la actividad (decaimiento con la antigüedad), la corroboración entre familias, IPsum y, como señal débil, `p_malicioso`, en una `severidad` de 0 a 100.
 
-Cada componente se guarda por separado, de modo que se puede explicar por qué un indicador tiene su puntuación. Como cada fuente mide algo distinto (distribución de malware, C2, phishing, ataques a servicios, informes de la comunidad), cada observación guarda una **categoría de amenaza** y la **familia de la fuente**: la severidad solo se compara, o pondera, dentro de una misma categoría, y la corroboración se cuenta por familias, no por observaciones.
+Como cada fuente mide algo distinto (distribución de malware, C2, phishing, ataques a servicios, informes de la comunidad), cada observación guarda una **categoría de amenaza** y la **familia de la fuente**: la severidad solo se compara dentro de una misma categoría, y la corroboración se cuenta por familias, no por observaciones.
 
-**Pesos de fiabilidad preliminares** (tasa de confirmación con ≥3 detecciones en VirusTotal, medida en dominios e IPs): PhishTank ≈0,97 y abuse.ch ≈0,59. TweetFeed, graduado por corroboración y etiqueta: ≈1,00 si lo corroboran sus feeds de referencia, ≈0,94 con etiqueta de malware o C2, ≈0,60 de phishing y ≈0,28 sin etiqueta. blocklist.de, graduado por IPsum: ≈0,96, ≈0,82 o ≈0,36; los bloques /24, ≈0,41. En URLs y hashes la confirmación es más alta que en los dominios de la misma fuente (sección 8), y queda por decidir si llevan pesos propios. Todos deben ser configurables, porque no hay una verdad contra la que validarlos. Un indicador **disputado** (por ejemplo, un dominio popular con ≥3 detecciones) sigue almacenado con la severidad rebajada y marcado para revisión.
+### 7.1 La fórmula
+
+Para cada indicador:
+
+1. **Fiabilidad `r` de cada observación**: el peso de su fuente **para ese tipo de indicador**, igual a su tasa de confirmación con ≥3 detecciones en VirusTotal (sección 8). Se decidió dar a URLs y hashes su peso propio, porque se confirman más que los dominios de la misma fuente.
+
+| Fuente | Peso por defecto (dominios y tipos sin validar) | Pesos propios |
+| --- | --- | --- |
+| PhishTank | 0,97 | URL 1,00 |
+| URLhaus | 0,59 | URL 0,73 |
+| ThreatFox | 0,59 | sha256 0,90 (medido 1,00, rebajado por ser en parte circular) |
+| TweetFeed | 1,00 corroborado · 0,94 malware o C2 · 0,60 phishing · 0,28 sin etiqueta | URL 0,82 · sha256 1,00 corroborado / 0,82 |
+| blocklist.de | IP 0,96 / 0,82 / 0,36 según IPsum (≥3 listas / 1–2 / ninguna) | bloque /24 0,41 |
+
+   Una URL de URLhaus marcada como `offline` pesa 0,8 de su fiabilidad (el estado como señal de actividad, opción C).
+
+2. **Decaimiento** `d = 0,5^(días desde la última confirmación / vida media)`. La última confirmación es la última descarga en la que la fuente seguía listando el indicador. Vida media: 7 días para IPs y bloques, 14 para URLs, 30 para dominios; los hashes no decaen.
+3. **Evidencia combinada por familias** (OR probabilístico): `E = 1 − Π(1 − r·d)`, con la mejor observación de cada familia. Dos familias independientes se refuerzan; dos observaciones de abuse.ch no cuentan doble. Para las IPs que no vienen de blocklist.de, **IPsum cuenta como una familia más** (0,96 con ≥3 listas, 0,82 con 1–2, sin decaimiento porque es la descarga del día).
+4. **Modelo A como señal débil** en dominios y hosts de URL que no son IP ni plataformas de doble uso: `S = 1 − (1 − E)(1 − 0,3·p_malicioso)`. Puede añadir hasta 30 puntos si no hay otra evidencia, pero nunca domina sobre las fuentes.
+5. **Disputado**: un dominio cuyo registrable está en el top 10.000 de Tranco se marca y su severidad se reduce a la mitad. No se aplica a los subdominios de plataformas de doble uso: `x.workers.dev` pertenece a un usuario y no hereda la popularidad de `workers.dev`.
+6. **Severidad** = `round(100·S)`.
+
+Todos los pesos están en un fichero de configuración (`severity_config.json`) y cada puntuación guarda su versión, porque no hay una severidad real contra la que validarlos. Cada término (fiabilidad, decaimiento y antigüedad por familia, evidencia, nivel de IPsum, `p_malicioso`, motivo de la disputa y categoría) se guarda por separado, de modo que se puede explicar por qué un indicador tiene su puntuación. Por ejemplo:
+
+> URL de phishing `allegrolokalnie.pl-oferta…click`: severidad 100 · PhishTank, fiabilidad 1,00, decaimiento 0,99 (vista hace 0,1 días) · modelo A, `p_malicioso` 0,9999.
+>
+> IP C2 `160.119.66.206`: severidad 97 · ThreatFox, fiabilidad 0,59, decaimiento 0,25 (14 días) · IPsum, nivel ≥3, 0,96.
+
+### 7.2 Lo que no entra en la fórmula
+
+- **La confianza de ThreatFox** (opción B): depende sobre todo del reportero y no se ha validado contra VirusTotal, así que no se usa. La fiabilidad de ThreatFox ya está medida como fuente.
+- **Las detecciones de VirusTotal**: solo sirven para medir los pesos; usarlas como entrada sería circular y la API pública no se puede usar en un producto.
 
 ## 8. Evidencia que respalda la decisión
 
@@ -114,34 +145,52 @@ Cada componente se guarda por separado, de modo que se puede explicar por qué u
 | Raíces de sitios de Tranco | 30 | 17 % | 0 % |
 | sha256 ThreatFox / TweetFeed | 49 / 45 | 100 / 93 % | 100 / 91 % |
 
-VirusTotal respalda las fuentes maliciosas y también la clase no maliciosa. La muestra de validación está completa: 825 indicadores, de los que VirusTotal conoce 818 (los 7 restantes son 6 hashes y 1 URL que nunca ha analizado). Dos lecturas importan para el score: una URL concreta se confirma más que el dominio que la aloja, lo que respalda separar la severidad de la URL de la de su host; y la confianza en TweetFeed depende mucho de su etiqueta y de si lo corroboran otros feeds, lo que justifica un peso graduado. El detalle está en las secciones 7 y 8 del documento de fase.
+VirusTotal respalda las fuentes maliciosas y también la clase no maliciosa. La muestra de validación está completa: 825 indicadores, de los que VirusTotal conoce 818 (los 7 restantes son 6 hashes y 1 URL que nunca ha analizado). Dos lecturas importan para el score: una URL concreta se confirma más que el dominio que la aloja, lo que justifica sus pesos propios; y la confianza en TweetFeed depende mucho de su etiqueta y de si lo corroboran otros feeds, lo que justifica un peso graduado. El detalle está en las secciones 7 y 8 del documento de fase.
 
-En el ensayo de aprendizaje con el conjunto final (`learning_trial.py`, reproducible; detalle en la sección 9.3 del documento de fase), la PR-AUC sube de 0,44 con 100 registros a 0,72 con 3.000 y a 0,80 con todos (ROC-AUC 0,90), sobre un test con un 17,6 % de maliciosos. Hay datos suficientes para un primer modelo, pero la variedad pesa más que la cantidad: sin abuse.ch en el entrenamiento el ROC-AUC baja a 0,79, y sin PhishTank o sin TweetFeed a 0,92 y 0,85. Una versión anterior del ensayo daba 0,87 porque incluía las plataformas compartidas, cuyas campañas eran fáciles de aprender.
+### 8.1 El modelo A: ensayo y versión desplegada
+
+En el **ensayo** con la exportación analizada (`learning_trial.py`; sección 9.3 del documento de fase), la PR-AUC sube de 0,44 con 100 registros a 0,72 con 3.000 y a 0,80 con todos (ROC-AUC 0,90), sobre un test con un 17,6 % de maliciosos. La variedad pesa más que la cantidad: sin abuse.ch en el entrenamiento el ROC-AUC baja a 0,79, y sin PhishTank o sin TweetFeed a 0,92 y 0,85.
+
+La **versión desplegada** (`model_a.py`, 19-10-2026) se entrena con lo que acumula la ingesta: 14.871 hosts maliciosos de 12.888 dominios registrables, vistos entre el 10 de julio y el 19 de octubre de 2026, y 49.717 no maliciosos.
+
+| Evaluación | PR-AUC | ROC-AUC |
+| --- | --- | --- |
+| Por dominio registrable (prevalencia en test 0,22) | 0,806 | 0,892 |
+| **Por tiempo**: el 20 % más reciente de cada familia como test | 0,810 | 0,887 |
+| Sin abuse.ch / sin PhishTank / sin TweetFeed en el entrenamiento | 0,778 / 0,927 / 0,649 | 0,804 / 0,926 / 0,837 |
+
+El modelo **no pierde calidad con el tiempo** (0,806 frente a 0,810): predice igual de bien los dominios más recientes, que no ha visto. Respecto al ensayo, se corrigió una pequeña filtración (los 40 TLD que se codifican como rasgo se eligen ahora solo con los datos de entrenamiento) y cada versión guarda la lista exacta de hosts con la que se entrenó, de modo que se puede reconstruir idéntica aunque la base de datos siga creciendo.
+
+### 8.2 Primera puntuación
+
+El 19-10-2026 se puntuaron 108.319 indicadores. Mediana de severidad por categoría y tipo: URLs de phishing 99, sha256 de distribución de malware 90, dominios C2 60, URLs de distribución de malware 58 e IPs que atacan servicios 36 (el 10 % más alto llega a 96, según IPsum y el decaimiento). 70 dominios quedaron disputados y 23.409 indicadores llevan término del modelo. Las cifras dependen de la fecha: la severidad baja sola cuando una fuente deja de listar un indicador.
 
 ## 9. Cómo hacer más fiable el score
 
-1. **Conjunto de referencia.** La validación con VirusTotal cubre ya dominios, IPs, URLs y hashes. Repetirla cuando cambien las fuentes o pasen meses y, si hace falta, ampliarla a md5, sha1 y a las IPs de ThreatFox y TweetFeed.
-2. **Calibrar el modelo A.** La clase negativa es artificial (unos 50.000 dominios benignos frente a unos 11.000 maliciosos), así que la probabilidad no equivale al riesgo real. Calibrar, medir con PR-AUC y presentar el score como una ordenación, no como una probabilidad.
-3. **Validar por campaña y por tiempo,** y limitar el peso de las campañas dominantes (por ejemplo, `shmulc`, el 44 % de URLhaus).
-4. **Marcar conflictos.** Un dominio que aparece a la vez como malicioso y entre los más populares debe bajar su score y mostrarse como disputado.
-5. **Decaimiento temporal.** Atenuar el peso de las observaciones antiguas.
-6. **Cerrar el ciclo con el analista.** El estado «falso positivo» del modelo de datos, registrado en la blockchain, se convierte con el tiempo en etiquetas reales para reentrenar.
+1. **Conjunto de referencia.** La validación con VirusTotal cubre dominios, IPs, URLs y hashes. Repetirla cuando cambien las fuentes o pasen meses y, si hace falta, ampliarla a md5, sha1 y a las IPs de ThreatFox y TweetFeed, que hoy usan el peso por defecto de su fuente.
+2. **Calibración: evaluada y descartada.** Platt no mejoró el Brier (0,0878 en ambos casos), así que el modelo no se calibra y usa todos los datos. Como la clase negativa es artificial (unos 50.000 dominios populares frente a unos 15.000 maliciosos), `p_malicioso` se usa como ordenación, no como probabilidad real.
+3. **Validación por campaña y por tiempo: hecha** (sección 8.1). La ponderación por dominio registrable se mantiene, aunque hoy no cambia el resultado porque la lista de doble uso ya eliminó las grandes concentraciones (como la de `shmulc`, el 44 % de URLhaus, casi toda en `githubusercontent.com`).
+4. **Conflictos: implementados** como marca de disputado (sección 7.1).
+5. **Decaimiento temporal: implementado**, con la última confirmación de cada fuente.
+6. **Cerrar el ciclo con el analista (pendiente).** El estado «falso positivo» del modelo de datos, registrado en la blockchain, se convierte con el tiempo en etiquetas reales para reentrenar y para revisar los pesos.
+7. **Reentrenar periódicamente** (por ejemplo, cada mes) y activar la nueva versión solo si su PR-AUC temporal no empeora.
 
 No se prevén más fuentes por ahora: añadir volumen del mismo tipo aporta poco, y solo se reconsiderará una fuente si cubre un hueco medible (criterios y candidatas en la sección 10 del documento de fase).
 
 ## 10. Limitaciones y riesgos
 
 - **VirusTotal no es una verdad absoluta:** sus motores consumen feeds como estos, y cero detecciones no equivale a benigno. En los hashes de ThreatFox el acuerdo es en parte circular.
-- **Fuentes poco independientes:** solo 41 indicadores de 74.884 aparecen en dos familias de fuentes.
-- **Los pesos de las reglas no se pueden validar** contra una severidad real: hay que justificarlos y mantenerlos configurables.
-- **El modelo A mide parecido a lo malicioso conocido,** no peligrosidad: un dominio malicioso nuevo con aspecto normal puntuará bajo.
-- **Ventanas temporales distintas:** la ausencia de un indicador en una fuente no implica que esté inactivo ni que sea benigno.
-- **Concentración por campaña y por fuente:** blocklist.de aporta el 93 % de las IPs individuales.
+- **Fuentes poco independientes:** pocos indicadores aparecen en dos familias de fuentes, así que la corroboración rara vez actúa.
+- **Los pesos de las reglas no se pueden validar** contra una severidad real: están medidos donde ha sido posible, son configurables y deben justificarse en la memoria. Los de IPsum para IPs que no vienen de blocklist.de, las vidas medias, el factor de `offline`, el peso del modelo (0,3) y el factor de disputa son decisiones razonadas, no medidas.
+- **El modelo A mide parecido a lo malicioso conocido,** no peligrosidad: un dominio malicioso nuevo con aspecto normal puntuará bajo. Por eso solo puede sumar hasta 30 puntos.
+- **La disputa solo usa Tranco:** un sitio legítimo comprometido que no esté en el top 10.000 no se marca.
+- **Ventanas temporales distintas:** la ausencia de un indicador en una fuente no implica que esté inactivo ni que sea benigno; el decaimiento lo trata como pérdida de actividad.
+- **Concentración por fuente:** blocklist.de aporta la gran mayoría de las IPs individuales.
 - **Muestras de validación pequeñas:** 30–66 indicadores por grupo (intervalos de ±10–15 puntos), y menos aún en los subgrupos por etiqueta de TweetFeed.
 
 ## 11. Próximos pasos
 
-1. Preparar el esquema de PostgreSQL, guardando la confianza, el estado, la categoría de amenaza, la familia de la fuente y el nivel de IPsum por observación, y calculando la severidad en una vista.
-2. Cargar las fuentes definitivas con los cargadores validados.
-3. Entrenar el modelo A con partición por campaña y por tiempo, y calibrarlo.
-4. Fijar la fórmula de severidad con los pesos medidos y decidir si URLs y hashes llevan pesos propios.
+1. Revisar la distribución de la severidad con unos días de ingesta y justificar los pesos en la memoria.
+2. Integrar el score con los microservicios Java (consulta y API) y con Hyperledger Fabric (hash canónico del indicador y procedencia).
+3. Recoger el estado «falso positivo» de los analistas para revisar pesos y reentrenar.
+4. Reentrenar el modelo A periódicamente con la base de datos.
