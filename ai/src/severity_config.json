@@ -11,6 +11,8 @@
     },
     "blocklist.de": {"ip": {"ipsum_3+": 0.96, "ipsum_1-2": 0.82, "ipsum_0": 0.36}, "cidr": 0.41}
   },
+  "_comment_organizations": "Fiabilidad de las organizaciones participantes (fuentes con role = 'organization', decisión 14). Sin nada medido: 0,5 por defecto, de modo que una aportación sin otra corroboración queda en ~50 y sube si la confirma otra familia. Un valor por organización (clave = su código en la tabla source) sustituye al '*'; en el futuro, a partir de los falsos positivos que marquen los analistas.",
+  "organization_reliability": {"*": 0.5},
   "_comment_ipsum": "IPsum como familia de evidencia propia para las IPs que NO vienen de blocklist.de (con ellas ya gradúa su fiabilidad). Pesos medidos en IPs de blocklist.de y aplicados por analogía: sin validar para IPs de otras fuentes. Sin decaimiento: es el nivel de la última descarga diaria.",
   "ipsum_signal": {"ipsum_3+": 0.96, "ipsum_1-2": 0.82},
   "status_factor": {"offline": 0.8},

@@ -2,7 +2,8 @@
 #
 # La contraseña va en .env (no se versiona):  POSTGRES_PASSWORD=...  (es la del usuario «verithreat» del contenedor)
 #   docker compose up -d postgres
-# El esquema (db/schema.sql) se aplica solo la primera vez que se crea el volumen. Para empezar de cero:
+# El esquema (db/schema.sql) y las migraciones (db/migrations/, en orden) se aplican solo la primera vez que se crea
+# el volumen; sobre una base existente, cada migración nueva se aplica a mano con psql. Para empezar de cero:
 #   docker compose down -v
 services:
   postgres:
@@ -17,6 +18,7 @@ services:
     volumes:
       - datos_postgres:/var/lib/postgresql/data
       - ./db/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      - ./db/migrations/002_organizations.sql:/docker-entrypoint-initdb.d/002_organizations.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U verithreat -d verithreat"]
       interval: 5s

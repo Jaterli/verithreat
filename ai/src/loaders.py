@@ -70,6 +70,54 @@ def _host(u: str) -> str:
     return to_punycode((urlparse(u).hostname or "").lower())
 
 
+# --------------------------------------------------------------------------- normalización de un valor suelto
+# Las mismas reglas que aplican los cargadores y que exige db/schema.sql (CHECK normalized_value). La implementación
+# Java (ioc-service, Normalizer) debe dar exactamente lo mismo: ambas se prueban con db/normalization_cases.json.
+_HEX = {"sha256": 64, "sha1": 40, "md5": 32}
+_DOMAIN_RE = re.compile(r"^(?=.{1,253}$)([a-z0-9_]([a-z0-9_-]{0,61}[a-z0-9_])?\.)+[a-z0-9-]{2,63}$")
+
+
+def normalize_value(typ: str, value: str) -> str:
+    """Valor normalizado de un indicador; ValueError si el valor no es válido para su tipo."""
+    v = (value or "").strip()
+    if not v:
+        raise ValueError("empty value")
+    if typ in _HEX:
+        v = v.lower()
+        if not re.fullmatch(rf"[0-9a-f]{{{_HEX[typ]}}}", v):
+            raise ValueError(f"not a {typ}: {value!r}")
+        return v
+    if typ == "domain":
+        v = v.lower().rstrip(".")
+        try:
+            v = v.encode("idna").decode("ascii")
+        except UnicodeError as e:
+            raise ValueError(f"invalid domain: {value!r}") from e
+        if not _DOMAIN_RE.match(v):
+            raise ValueError(f"invalid domain: {value!r}")
+        return v
+    if typ == "url":
+        if not re.match(r"^[a-z][a-z0-9+.-]*://\S+$", v, re.I):
+            raise ValueError(f"invalid url: {value!r}")
+        return v
+    if typ == "ip":
+        if "%" in v:  # IPv6 con zona (fe80::1%eth0): local a un equipo, no es un indicador
+            raise ValueError(f"scoped IPv6 not accepted: {value!r}")
+        try:
+            a = ipaddress.ip_address(v)
+        except ValueError as e:
+            raise ValueError(f"invalid ip: {value!r}") from e
+        if a.version == 6 and a.ipv4_mapped is not None:
+            raise ValueError(f"IPv4-mapped IPv6 not accepted, use the IPv4 address: {value!r}")
+        return a.compressed
+    if typ == "cidr":
+        try:
+            return str(ipaddress.ip_network(v, strict=True))
+        except ValueError as e:
+            raise ValueError(f"invalid cidr: {value!r}") from e
+    raise ValueError(f"unknown type: {typ!r}")
+
+
 # --------------------------------------------------------------------------- abuse.ch
 UH_COLS = ["id", "dateadded", "url", "url_status", "last_online", "threat", "tags", "urlhaus_link", "reporter"]
 

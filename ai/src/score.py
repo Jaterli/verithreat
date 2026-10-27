@@ -4,7 +4,8 @@
 Fórmula (pesos en severity_config.json, regla 8 de CLAUDE.md):
   1. Fiabilidad de cada observación r: peso de su fuente para ese tipo de indicador (medido con VirusTotal);
      TweetFeed graduado por corroboración/categoría, IPs de blocklist.de por nivel de IPsum. URLhaus offline × 0,8.
-     Para las demás IPs, IPsum cuenta como una familia más (peso por analogía, sin decaimiento).
+     Para las demás IPs, IPsum cuenta como una familia más (peso por analogía, sin decaimiento). Las organizaciones
+     participantes (role = 'organization') usan organization_reliability (0,5 por defecto).
   2. Decaimiento d = 0,5 ^ (días desde last_confirmed_at / vida media del tipo); los hashes no decaen.
   3. Evidencia por familias (OR probabilístico): E = 1 − Π (1 − máx(r·d) de cada familia). Dos observaciones de la
      misma familia no cuentan doble (decisión 4).
@@ -49,6 +50,8 @@ SELECT ip.indicator_id, ip.level FROM ipsum_signal ip
 WHERE ip.download_id = (SELECT id FROM download WHERE source = 'ipsum' ORDER BY fetched_at DESC, id DESC LIMIT 1)"""
 
 SQL_CURRENT = "SELECT indicator_id, severity, disputed FROM v_current_score"
+
+SQL_ORGANIZATIONS = "SELECT code FROM source WHERE role = 'organization'"
 
 
 # ----------------------------------------------------------------------------- configuración
@@ -153,7 +156,15 @@ def active_model(conn):
     return row[0], load_artifact(path)
 
 
+def add_organizations(cfg: dict, codes) -> None:
+    """Cada organización participante es una fuente con un único peso para todos los tipos (decisión 14)."""
+    weights = cfg["organization_reliability"]
+    for code in codes:
+        cfg["reliability"].setdefault(code, {"*": float(weights.get(code, weights["*"]))})
+
+
 def compute(conn, cfg: dict, tranco_path: Path, now: pd.Timestamp) -> tuple:
+    add_organizations(cfg, [r[0] for r in conn.execute(SQL_ORGANIZATIONS).fetchall()])
     sightings = pd.DataFrame(conn.execute(SQL_SIGHTINGS).fetchall(),
                              columns=["indicator_id", "type", "value", "source", "family", "category", "status",
                                       "corroborated", "last_confirmed_at"])

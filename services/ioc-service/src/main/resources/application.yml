@@ -1,0 +1,29 @@
+# VeriThreat · ioc-service. La base de datos es la de docker-compose.yml (esquema verithreat), compartida con el motor
+# Python de ai/ (decisión 14 de CLAUDE.md). La contraseña se toma de PGPASSWORD o de POSTGRES_PASSWORD (.env del repo).
+spring:
+  application:
+    name: ioc-service
+  config:
+    import: optional:file:../../.env[.properties]
+  datasource:
+    url: jdbc:postgresql://${PGHOST:127.0.0.1}:${PGPORT:5433}/${PGDATABASE:verithreat}?currentSchema=verithreat
+    username: ${PGUSER:verithreat}
+    password: ${PGPASSWORD:${POSTGRES_PASSWORD:}}
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  address: 127.0.0.1   # solo accesible desde este equipo; el Gateway (subpaso b) será la puerta de entrada
+  port: 8081
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+verithreat:
+  # Cabecera con la organización que llama. En el subpaso (b) la pondrá el Gateway tras validar la clave de API y
+  # el servicio dejará de ser accesible directamente.
+  organization-header: X-Organization

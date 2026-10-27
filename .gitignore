@@ -26,6 +26,9 @@ ai/data/raw/
 # Versiones entrenadas del modelo A (binarios y listas de hosts; se regeneran con model_a.py --from-hosts)
 ai/models/
 
+### java ###
+target/
+
 ### python ###
 .venv/
 __pycache__/

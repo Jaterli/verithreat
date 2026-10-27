@@ -50,7 +50,11 @@ verithreat/ai/
                                  por ingest.py
   notebooks/01_exploration.ipynb exploración, calidad, solapes, clase no maliciosa, esquema común, validación VT
   data/raw/                      CSV de las fuentes (NO se versionan)
+  tests/test_normalization.py    normalize_value (loaders.py) contra db/normalization_cases.json
 verithreat/db/schema.sql         esquema PostgreSQL (se aplica solo al crear el contenedor)
+verithreat/db/migrations/        cambios posteriores numerados (002_organizations.sql); en una base existente, con psql
+verithreat/db/normalization_cases.json   casos compartidos de normalización (Python y Java deben dar lo mismo)
+verithreat/services/ioc-service/ Spring Boot 4.0.9 (Java 17, Maven): API de consulta y aportaciones (paso 6a)
 verithreat/docker-compose.yml    por ahora solo `postgres` (puerto 5433 en 127.0.0.1; contraseña POSTGRES_PASSWORD en .env)
 ```
 
@@ -281,6 +285,15 @@ python model_a.py --from-hosts ../models/model_a/<versión>/training_hosts.csv -
 python score.py --data-dir ../data/raw --dry-run        # calcula y resume por categoría y tipo, sin escribir
 python score.py --data-dir ../data/raw                  # guarda solo los cambios (≥5 puntos o disputado)
 
+# Normalización compartida Python / Java:
+python ai/tests/test_normalization.py
+
+# Servicio de IOCs (en WSL, desde services/ioc-service; lee POSTGRES_PASSWORD de ../../.env):
+mvn test                                         # unitarios + integración con Testcontainers (PostgreSQL 17 real)
+mvn -DskipTests package && java -jar target/ioc-service-0.1.0.jar   # http://127.0.0.1:8081/swagger-ui.html
+#   GET  /api/v1/indicators/lookup?type=domain&value=evil.com   GET /api/v1/indicators?category=&type=&minSeverity=
+#   GET  /api/v1/indicators/{id}                                POST /api/v1/sightings  (cabecera X-Organization)
+
 # Histórico de blocklist.de (opcional, fuera de la ingesta; --dns necesita dnspython):
 python blocklist_history.py --verify 200 --verify-only --seed 7
 python blocklist_history.py --dns --max-dns 500
@@ -357,12 +370,16 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
    disputados, 23.409 con término del modelo. Mediana por categoría y tipo: URLs de phishing 99, sha256 de
    distribución 90, URLs de distribución 58, dominios C2 60, IPs de ataque 36 (p90 96). Pendiente: justificar los
    pesos en la memoria y revisar la distribución con unos días de ingesta.
-6. Integración con Java y con Fabric (decisión 14), en este orden: (a) servicio Spring Boot de IOCs sobre la base de
-   datos actual (consulta de indicadores y severidad, envío de IOCs por organización); (b) Spring Cloud Gateway con
+6. Integración con Java y con Fabric (decisión 14), en este orden: (a) ~~servicio Spring Boot de IOCs~~ (hecho el
+   27-10-2026, `services/ioc-service`: lookup, listado, detalle y `POST /sightings`; cada organización es una fuente
+   con `role = 'organization'` y familia propia, migración 002; una aportación repetida renueva `last_confirmed_at`
+   en vez de duplicarse; severidad en la siguiente ejecución de `score.py` con `organization_reliability` 0,5;
+   normalización Java = Python con 35 casos compartidos; 6 tests con Testcontainers; prueba de humo contra la base
+   real, listado en 0,2 s. En (a) la organización llega en `X-Organization` sin autenticar y el servicio solo
+   escucha en 127.0.0.1); (b) Spring Cloud Gateway con
    autenticación por organización; (c) red Fabric de prueba (2 organizaciones) y chaincode; (d) registrar en Fabric
    cada IOC aportado (hash canónico: tipo + valor normalizado + organización + timestamp). Entorno en WSL: Java 17,
-   Maven, Docker y Node instalados; faltan los binarios de Fabric (Go no hace falta con chaincode en Java). Pendiente
-   de diseñar: cómo puntúa `score.py` los IOCs aportados por organizaciones (peso de fiabilidad por organización).
+   Maven, Docker y Node instalados; faltan los binarios de Fabric (Go no hace falta con chaincode en Java).
 7. Mantenimiento: revisar `DUAL_USE` (candidatos vistos: `upload.cc`, `replit.dev`, `trycloudflare.com`,
    `wasmer.app`, `backblazeb2.com`); repetir la validación con
    VirusTotal cuando cambie el conjunto de fuentes o pasen meses.
