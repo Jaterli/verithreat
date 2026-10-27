@@ -27,3 +27,6 @@ verithreat:
   # Cabecera con la organización que llama. En el subpaso (b) la pondrá el Gateway tras validar la clave de API y
   # el servicio dejará de ser accesible directamente.
   organization-header: X-Organization
+  # Secreto compartido con el Gateway (GATEWAY_TOKEN en .env): sin él, /api/** devuelve 401. Vacío = no se exige
+  # (solo para desarrollo; el servicio lo avisa al arrancar).
+  gateway-token: ${GATEWAY_TOKEN:}

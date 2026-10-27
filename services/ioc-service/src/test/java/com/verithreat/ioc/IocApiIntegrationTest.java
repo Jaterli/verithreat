@@ -26,7 +26,7 @@ import org.testcontainers.utility.MountableFile;
  * La API de principio a fin contra un PostgreSQL real con el esquema y las migraciones del repositorio (db/), tal
  * como los aplica docker-compose.yml.
  */
-@SpringBootTest
+@SpringBootTest(properties = "verithreat.gateway-token=") // la API sin Gateway; el filtro tiene su propio test
 @AutoConfigureMockMvc
 @Testcontainers
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

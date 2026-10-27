@@ -1,0 +1,25 @@
+# VeriThreat · API Gateway. Única puerta de entrada de las organizaciones: valida su clave de API (tabla api_key) y
+# reenvía la petición al servicio con la organización real en X-Organization (decisión 14 de CLAUDE.md).
+spring:
+  application:
+    name: gateway
+  config:
+    import: optional:file:../../.env[.properties]
+  datasource:
+    url: jdbc:postgresql://${PGHOST:127.0.0.1}:${PGPORT:5433}/${PGDATABASE:verithreat}?currentSchema=verithreat
+    username: ${PGUSER:verithreat}
+    password: ${PGPASSWORD:${POSTGRES_PASSWORD:}}
+    hikari:
+      maximum-pool-size: 4
+
+server:
+  address: 127.0.0.1
+  port: 8080
+
+verithreat:
+  ioc-service-url: ${IOC_SERVICE_URL:http://127.0.0.1:8081}
+  # Secreto compartido con ioc-service: demuestra que la petición ha pasado por el Gateway (variable GATEWAY_TOKEN
+  # en .env). Vacío = no se envía.
+  gateway-token: ${GATEWAY_TOKEN:}
+  # Cuánto tiempo se recuerda una clave válida antes de volver a consultarla (una revocación tarda como mucho esto)
+  api-key-cache-seconds: 60

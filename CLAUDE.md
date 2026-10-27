@@ -55,6 +55,8 @@ verithreat/db/schema.sql         esquema PostgreSQL (se aplica solo al crear el 
 verithreat/db/migrations/        cambios posteriores numerados (002_organizations.sql); en una base existente, con psql
 verithreat/db/normalization_cases.json   casos compartidos de normalización (Python y Java deben dar lo mismo)
 verithreat/services/ioc-service/ Spring Boot 4.0.9 (Java 17, Maven): API de consulta y aportaciones (paso 6a)
+verithreat/services/gateway/     Spring Cloud Gateway Server MVC 5.0 (Spring Cloud 2025.1.4): claves de API por
+                                 organización (paso 6b); scripts/new-api-key.sh crea una clave y la muestra una vez
 verithreat/docker-compose.yml    por ahora solo `postgres` (puerto 5433 en 127.0.0.1; contraseña POSTGRES_PASSWORD en .env)
 ```
 
@@ -294,6 +296,11 @@ mvn -DskipTests package && java -jar target/ioc-service-0.1.0.jar   # http://127
 #   GET  /api/v1/indicators/lookup?type=domain&value=evil.com   GET /api/v1/indicators?category=&type=&minSeverity=
 #   GET  /api/v1/indicators/{id}                                POST /api/v1/sightings  (cabecera X-Organization)
 
+# Gateway (en WSL, desde services/gateway; GATEWAY_TOKEN en .env, el mismo para los dos servicios):
+mvn -DskipTests package && java -jar target/gateway-0.1.0.jar        # http://127.0.0.1:8080/api/...
+sh scripts/new-api-key.sh org-alpha "descripción"                    # clave nueva, se muestra una vez
+#   curl -H "X-API-Key: vt_..." "http://127.0.0.1:8080/api/v1/indicators/lookup?type=domain&value=evil.com"
+
 # Histórico de blocklist.de (opcional, fuera de la ingesta; --dns necesita dnspython):
 python blocklist_history.py --verify 200 --verify-only --seed 7
 python blocklist_history.py --dns --max-dns 500
@@ -375,9 +382,13 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
    con `role = 'organization'` y familia propia, migración 002; una aportación repetida renueva `last_confirmed_at`
    en vez de duplicarse; severidad en la siguiente ejecución de `score.py` con `organization_reliability` 0,5;
    normalización Java = Python con 35 casos compartidos; 6 tests con Testcontainers; prueba de humo contra la base
-   real, listado en 0,2 s. En (a) la organización llega en `X-Organization` sin autenticar y el servicio solo
-   escucha en 127.0.0.1); (b) Spring Cloud Gateway con
-   autenticación por organización; (c) red Fabric de prueba (2 organizaciones) y chaincode; (d) registrar en Fabric
+   real, listado en 0,2 s); (b) ~~Gateway con autenticación por organización~~ (hecho el 27-10-2026,
+   `services/gateway`, migración 003 `api_key`: solo el sha256 de cada clave de 192 bits; caché de claves válidas de
+   60 s = una revocación tarda ≤ 60 s. El Gateway exige `X-API-Key`, borra `X-Organization`/`X-Gateway-Token` del
+   cliente, pone la organización real y el secreto `X-Gateway-Token`; `ioc-service` rechaza /api/** sin ese secreto
+   si `GATEWAY_TOKEN` está configurado. 2 + 3 tests nuevos; prueba de principio a fin con 8 comprobaciones. Fuera por
+   complejidad: límite de peticiones por organización y rotación de claves); (c) red Fabric de prueba (2
+   organizaciones) y chaincode; (d) registrar en Fabric
    cada IOC aportado (hash canónico: tipo + valor normalizado + organización + timestamp). Entorno en WSL: Java 17,
    Maven, Docker y Node instalados; faltan los binarios de Fabric (Go no hace falta con chaincode en Java).
 7. Mantenimiento: revisar `DUAL_USE` (candidatos vistos: `upload.cc`, `replit.dev`, `trycloudflare.com`,
