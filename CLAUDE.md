@@ -10,17 +10,19 @@ Plataforma de intercambio de **Threat Intelligence** entre organizaciones (TFM F
 **IOCs** (dominios, URLs, hashes, IPs) con tres piezas:
 
 - **Microservicios Java** (Spring Boot, Spring Cloud Gateway, PostgreSQL, Docker Compose; Kafka/RabbitMQ opcional):
-  ingesta/normalización, API Gateway y consulta/scoring.
-- **Motor de IA** (Python, scikit-learn): puntúa el riesgo de cada indicador (`severidad`) y, opcionalmente, resume
-  alertas con un LLM local (Ollama).
+  API Gateway con autenticación por organización y servicio de IOCs (consulta, aportaciones de las organizaciones y
+  registro en Fabric). **No ingieren ni puntúan** (decisión 14).
+- **Motor de ingesta e IA** (Python, scikit-learn): ingesta programada de los feeds, normalización, carga en
+  PostgreSQL y severidad de cada indicador; opcionalmente, resúmenes con un LLM local (Ollama). Python y Java se
+  comunican solo a través de PostgreSQL.
 - **Blockchain permisionada** (Hyperledger Fabric, 2–3 nodos): registra hash y procedencia de cada IOC compartido.
 - **Dashboard** React (Recharts, Tailwind) para analistas.
 
 Criterio de éxito clave: el score de riesgo debe ser **coherente y explicable**. Por eso cada componente del score se
 guarda por separado y se conoce la fiabilidad de cada fuente.
 
-**Esta carpeta (`ai/`) cubre solo la fase de datos y el modelo.** La ingesta Java, la base de datos definitiva,
-Fabric y el dashboard son fases posteriores y aún no están hechas.
+**La carpeta `ai/` cubre los datos, la ingesta, el modelo y la severidad** (hechos y en ejecución horaria), y `db/`
+la base de datos. Los microservicios Java, Fabric y el dashboard son el paso 6 y siguientes, y aún no están hechos.
 
 ## 2. Estructura y archivos
 
@@ -85,7 +87,7 @@ redistribuir los IOCs entre organizaciones, salvo TweetFeed e IPsum):
 | abuse.ch ([términos](https://abuse.ch/terms-of-use/), 4-11-2025) | Gratis solo para usuarios autenticados y fines **no lucrativos**; uso comercial = suscripción vía Spamhaus | Volumen «razonable» sin cifra; prohíbe la recolección masiva automatizada; las exportaciones de URLhaus se generan cada 5 min y no deben pedirse más a menudo | Nada sobre redistribución ni licencia de datos |
 | blocklist.de ([términos](https://www.blocklist.de/en/terms.html)) | Gratis, «salvo descarga de las listas con demasiado volumen» | `all.txt` = últimas 48 h, regenerada cada 30 min | Nada sobre redistribución ni uso comercial |
 | PhishTank ([FAQ](https://phishtank.org/faq.php), [developer info](https://phishtank.org/developer_info.php)); operado por Cisco Talos | Gratis para todos; la FAQ permite **uso comercial y no comercial** de la API y los datos. Rigen los [General Terms de Cisco](https://www.cisco.com/c/dam/en_us/about/doing_business/legal/Cisco_General_Terms.pdf) (v6.0, 10-9-2025): licencia «for Your direct benefit», prohíben «transfer, sell, sublicense, monetize, or provide the functionality… to any third party» | Datos cada hora; límite de peticiones por hora. Sin clave funciona (`http://data.phishtank.com/data/online-valid.csv`) pero solo «unas pocas descargas al día»; con clave, más; User-Agent descriptivo obligatorio; HEAD con ETag ilimitado | Ni la FAQ ni los términos hablan de **redistribuir** los datos a terceros; los términos generales, leídos al pie de la letra, lo restringen. `online-valid.csv` = mismas columnas que `verified_online.csv` |
-| TweetFeed | Datos CC0; no verifica los indicadores | — | — |
+| TweetFeed ([API](https://tweetfeed.live/api/)) | Datos CC0; no verifica los indicadores y desaconseja usarlos directamente como lista de bloqueo | Feeds oficiales `https://tweetfeed.live/feeds/month.csv` y `exclusive.csv`, regenerados cada 15 min, con ETag; sin límite estricto. La API JSON (`/v1/month`) corta a 10.000 filas y no trae la corroboración; el README desaconseja descargar del repositorio de GitHub | — |
 | IPsum ([repo](https://github.com/stamparm/ipsum)) | The Unlicense (dominio público) | Se actualiza cada 24 h | — |
 | Tranco ([web](https://tranco-list.eu/)) | Sin licencia propia declarada; fuentes con CC BY, CC BY-SA y **CC BY-NC 4.0** (Cloudflare Radar) | — | Uso comercial dudoso; citar el artículo de Tranco por buena práctica |
 | VirusTotal ([API pública](https://docs.virustotal.com/reference/public-vs-premium-api)) | API pública **prohibida en productos o servicios comerciales** y en flujos de negocio | 4 peticiones/min, 500/día | Solo para la validación académica, nunca dentro de la plataforma |
@@ -167,6 +169,17 @@ Las exportaciones `recent` cubren pocos días y se regeneran cada pocos minutos.
     6. `severity = round(100·S)`; `components` guarda cada término, la categoría (la de la familia que más aporta) y
        el hash de la configuración. Historial: fila nueva solo si no había puntuación, cambia ≥5 puntos o cambia
        `disputed`. Se ejecuta tras cada ingesta horaria (`run_ingest.sh`, ~15 s).
+
+14. **Reparto Python / Java y blockchain** (27-10-2026; cambia el enunciado original, ver la sección 16 del informe
+    de planificación):
+    - **Python ingiere y puntúa; Java expone.** La ingesta, la normalización y el scoring se quedan en `ai/` (ya
+      validados y en ejecución horaria). Los microservicios Java hacen la API de consulta, la recepción de IOCs que
+      aportan las organizaciones, la autenticación por organización (Gateway) y el registro en Fabric. El contrato
+      entre ambos es el esquema de PostgreSQL (`db/schema.sql`); no se llaman entre sí. Ninguna lógica se duplica.
+    - **En Fabric solo se registran los IOCs que aportan las organizaciones** (procedencia que hay que garantizar).
+      Los feeds públicos ya tienen su procedencia en `source`/`download`, son ~100.000 cambios al día y sus términos
+      no autorizan redistribuirlos.
+    - **Orden del paso 6:** API Java → Gateway → red Fabric y chaincode → conectar las aportaciones con Fabric.
 
 ## 5. Cifras de referencia
 
@@ -344,7 +357,12 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
    disputados, 23.409 con término del modelo. Mediana por categoría y tipo: URLs de phishing 99, sha256 de
    distribución 90, URLs de distribución 58, dominios C2 60, IPs de ataque 36 (p90 96). Pendiente: justificar los
    pesos en la memoria y revisar la distribución con unos días de ingesta.
-6. Integración con la ingesta Java y con Fabric (hash canónico: tipo + valor normalizado + fuente + timestamp).
+6. Integración con Java y con Fabric (decisión 14), en este orden: (a) servicio Spring Boot de IOCs sobre la base de
+   datos actual (consulta de indicadores y severidad, envío de IOCs por organización); (b) Spring Cloud Gateway con
+   autenticación por organización; (c) red Fabric de prueba (2 organizaciones) y chaincode; (d) registrar en Fabric
+   cada IOC aportado (hash canónico: tipo + valor normalizado + organización + timestamp). Entorno en WSL: Java 17,
+   Maven, Docker y Node instalados; faltan los binarios de Fabric (Go no hace falta con chaincode en Java). Pendiente
+   de diseñar: cómo puntúa `score.py` los IOCs aportados por organizaciones (peso de fiabilidad por organización).
 7. Mantenimiento: revisar `DUAL_USE` (candidatos vistos: `upload.cc`, `replit.dev`, `trycloudflare.com`,
    `wasmer.app`, `backblazeb2.com`); repetir la validación con
    VirusTotal cuando cambie el conjunto de fuentes o pasen meses.

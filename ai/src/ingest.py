@@ -7,7 +7,7 @@ frecuencia (tabla SOURCES), respetando los términos de uso de cada una (CLAUDE.
   threatfox     API get_iocs (Auth-Key)                     cada hora (días pedidos = desde el último éxito, máx. 7)
   urlhaus       exportación recent.csv (clave en la URL)    cada hora (se genera cada 5 min)
   blocklist.de  all.txt                                     cada hora (se regenera cada 30 min)
-  tweetfeed     month.csv + exclusive.csv (GitHub)          cada hora, petición condicional (ETag)
+  tweetfeed     month.csv + exclusive.csv (tweetfeed.live)  cada hora, petición condicional (ETag)
   phishtank     online-valid.csv, sin clave                 cada 6 h («unas pocas descargas al día»), con ETag
   ipsum         ipsum_level1..8.txt (GitHub)                cada 24 h
 
@@ -75,8 +75,10 @@ URLS = {
     "threatfox": "https://threatfox-api.abuse.ch/api/v1/",
     "urlhaus": "https://urlhaus-api.abuse.ch/v2/files/exports/{key}/recent.csv",
     "blocklist.de": "https://lists.blocklist.de/lists/all.txt",
-    "tweetfeed_month": "https://raw.githubusercontent.com/0xDanielLopez/TweetFeed/master/month.csv",
-    "tweetfeed_exclusive": "https://raw.githubusercontent.com/0xDanielLopez/TweetFeed/master/exclusive.csv",
+    # Feeds oficiales (https://tweetfeed.live/api/): los 30 días completos y sin el tope de 10.000 filas de la API
+    # JSON, que además no trae la corroboración. Su README desaconseja descargar del repositorio de GitHub.
+    "tweetfeed_month": "https://tweetfeed.live/feeds/month.csv",
+    "tweetfeed_exclusive": "https://tweetfeed.live/feeds/exclusive.csv",
     "phishtank": "http://data.phishtank.com/data/online-valid.csv",
     "ipsum": "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/{n}.txt",
 }

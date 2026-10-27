@@ -5,7 +5,7 @@
 
 ## 1. Resumen ejecutivo
 
-Este documento describe de principio a fin un proyecto académico-profesional consistente en el diseño y desarrollo de una **plataforma de intercambio de inteligencia de amenazas (Threat Intelligence)** construida sobre una arquitectura de **microservicios en Java**, con un **motor de Inteligencia Artificial** para correlación y priorización de indicadores de compromiso (IOCs), y una **capa de blockchain permisionada** que garantiza la trazabilidad e inmutabilidad de la información compartida entre organizaciones.
+Este documento describe de principio a fin un proyecto académico-profesional consistente en el diseño y desarrollo de una **plataforma de intercambio de inteligencia de amenazas (Threat Intelligence)** con tres piezas: **microservicios en Java** que exponen la plataforma a las organizaciones (API, autenticación y aportación de indicadores), un **motor de ingesta e Inteligencia Artificial en Python** que recoge fuentes abiertas y puntúa y prioriza los indicadores de compromiso (IOCs), y una **capa de blockchain permisionada** que garantiza la trazabilidad e inmutabilidad de la información compartida entre organizaciones.
 
 El proyecto está pensado para poder desarrollarse íntegramente sin coste económico, usando exclusivamente software open source ejecutado en local, y su enfoque de negocio está alineado con las prioridades actuales del sector de ciberseguridad en España, en particular con las líneas de trabajo de Minsait Cyber (unidad de ciberseguridad de Indra Group).
 
@@ -31,11 +31,12 @@ El sector está señalando explícitamente estos retos de cara a 2026: se antici
 ## 3. Objetivos del proyecto
 
 **Objetivo general:**
-Diseñar, implementar y validar un prototipo funcional de plataforma de intercambio de inteligencia de amenazas que combine microservicios en Java, un motor de IA para análisis y priorización, y una capa blockchain para garantizar la integridad y trazabilidad de los datos compartidos.
+Diseñar, implementar y validar un prototipo funcional de plataforma de intercambio de inteligencia de amenazas que combine microservicios en Java, un motor de ingesta e IA en Python para análisis y priorización, y una capa blockchain para garantizar la integridad y trazabilidad de los datos compartidos.
 
 **Objetivos específicos:**
 - Definir un modelo de datos estándar para representar IOCs y sus metadatos (fuente, severidad, timestamp, tipo).
-- Implementar una arquitectura de microservicios desacoplada, escalable y contenerizada.
+- Automatizar la ingesta y normalización de fuentes abiertas de IOCs, respetando sus términos de uso.
+- Implementar una arquitectura de microservicios desacoplada, escalable y contenerizada para exponer la plataforma a las organizaciones.
 - Entrenar y desplegar un modelo de IA capaz de puntuar el riesgo de un IOC y, opcionalmente, generar resúmenes legibles de incidentes.
 - Desplegar una red blockchain permisionada que registre cada IOC compartido de forma inmutable.
 - Construir un dashboard funcional para analistas de seguridad.
@@ -49,8 +50,9 @@ Diseñar, implementar y validar un prototipo funcional de plataforma de intercam
 Para que el proyecto sea abarcable en el marco de un TFM, se recomienda acotar el alcance a un **producto mínimo viable (MVP)** con los siguientes límites:
 
 **Incluido en el MVP:**
-- 2-3 microservicios Java (ingesta/normalización, API Gateway, y consulta/scoring).
-- Un modelo de IA de clasificación/scoring de riesgo entrenado con un dataset abierto.
+- 2 microservicios Java: un API Gateway con autenticación por organización y un servicio de IOCs (consulta de indicadores y su severidad, aportación de IOCs por parte de las organizaciones y registro de esas aportaciones en la blockchain).
+- Un motor de ingesta y scoring en Python: ingesta programada de fuentes abiertas, normalización y carga en PostgreSQL, y cálculo de la severidad de cada indicador. Se comunica con los microservicios a través de la base de datos compartida.
+- Un modelo de IA de clasificación/scoring de riesgo entrenado con datos abiertos.
 - Un resumen automático de IOCs mediante un modelo de lenguaje (LLM) local, como funcionalidad complementaria.
 - Una red blockchain de prueba con 2-3 nodos simulando organizaciones distintas.
 - Un dashboard web simple (React) para visualizar alertas priorizadas.
@@ -68,34 +70,35 @@ Para que el proyecto sea abarcable en el marco de un TFM, se recomienda acotar e
 
 La plataforma se organiza en cinco capas, con flujo de datos de arriba hacia abajo:
 
-1. **Fuentes externas**: feeds OSINT, CERTs, listas de IOCs públicas (MISP, AlienVault OTX, abuse.ch).
-2. **Capa de microservicios Java**: API Gateway + microservicio de ingesta y normalización de IOCs.
-3. **Motor de IA**: correlación de eventos, scoring de riesgo (modelo de ML) y generación de resúmenes (LLM).
-4. **Capa blockchain**: red permisionada que registra el hash y la procedencia de cada IOC compartido, garantizando inmutabilidad y trazabilidad.
+1. **Fuentes externas**: feeds OSINT abiertos (abuse.ch ThreatFox y URLhaus, blocklist.de, PhishTank, TweetFeed, IPsum como señal de fiabilidad) y los IOCs que aportan las propias organizaciones participantes.
+2. **Motor de ingesta e IA (Python)**: descarga programada de los feeds, validación, normalización a un modelo común y carga idempotente en PostgreSQL; scoring de riesgo (reglas de fiabilidad por fuente con un modelo de ML como señal adicional) y, opcionalmente, generación de resúmenes (LLM).
+3. **Capa de microservicios Java**: API Gateway (autenticación por organización y enrutamiento) + servicio de IOCs (consulta de indicadores y severidad, y recepción de los IOCs que aportan las organizaciones).
+4. **Capa blockchain**: red permisionada que registra el hash y la procedencia de cada IOC que aporta una organización, garantizando inmutabilidad y trazabilidad.
 5. **Capa de consumo**: dashboard para analistas del SOC y API segura para que empresas socias consulten inteligencia verificada.
 
-Esta separación en capas permite desarrollar y probar cada componente de forma independiente, algo especialmente útil quen se trabaja en solitario en un TFM, ya que se puede avanzar por fases sin bloquear el resto del sistema.
+El motor Python y los microservicios Java no se llaman entre sí: comparten la base de datos PostgreSQL, cuyo esquema versionado actúa como contrato entre ambos. Esta separación en capas permite desarrollar y probar cada componente de forma independiente, algo especialmente útil cuando se trabaja en solitario en un TFM, ya que se puede avanzar por fases sin bloquear el resto del sistema.
 
 ---
 
 ## 6. Tecnologías y stack por capa
 
 ### 6.1 Backend / microservicios
-- **Java 17+ / Spring Boot** — framework principal de los microservicios.
+- **Java 17+ / Spring Boot** — framework principal de los microservicios (API y aportaciones de las organizaciones; la ingesta de feeds la hace el motor Python, sección 6.2).
 - **Spring Cloud Gateway** — API Gateway y enrutamiento.
 - **Spring Data JPA + PostgreSQL** (o MongoDB si se prefiere un modelo documental para los IOCs).
 - **Apache Kafka o RabbitMQ** — comunicación asíncrona entre microservicios (opcional pero recomendable para mostrar dominio de arquitecturas event-driven).
 - **Docker + Docker Compose** — contenerización y orquestación local.
 - **Maven o Gradle** — gestión de dependencias y build.
 
-### 6.2 Inteligencia Artificial
-- **Python + scikit-learn** (o **Deeplearning4j** si se prefiere mantener todo en el ecosistema Java) — modelo de scoring de riesgo (clasificación/regresión sobre features del IOC: tipo, fuente, frecuencia de aparición, contexto).
+### 6.2 Ingesta e Inteligencia Artificial
+- **Python + pandas + requests** — ingesta programada de los feeds (tarea horaria), validación, normalización y carga idempotente en PostgreSQL (psycopg).
+- **Python + scikit-learn** — modelo de clasificación de dominios maliciosos a partir de rasgos léxicos del propio dominio (longitud, entropía, dígitos, TLD…), y fórmula de severidad que combina la fiabilidad medida de cada fuente, la antigüedad, la corroboración entre fuentes y el modelo. La fuente, la frecuencia o el contexto no entran en el modelo, porque delatarían la respuesta: se usan en las reglas.
 - **Ollama** — para ejecutar modelos de lenguaje open source en local (Llama 3, Mistral, etc.) sin coste de API, usados para generar resúmenes o explicaciones de las alertas.
 - **Pandas / Jupyter Notebook** — exploración y preparación de datos durante el entrenamiento.
 
 ### 6.3 Blockchain
 - **Hyperledger Fabric** — red blockchain permisionada (no pública, sin criptomonedas ni gas).
-- **Chaincode (Go o Java)** — lógica de negocio para registrar el hash y metadatos de cada IOC compartido.
+- **Chaincode (Go o Java)** — lógica de negocio para registrar el hash y metadatos de cada IOC que aporta una organización (los feeds públicos ya conservan su procedencia en la base de datos).
 - **Fabric SDK for Java** — integración desde los microservicios hacia la red blockchain.
 
 ### 6.4 Frontend
@@ -119,7 +122,7 @@ Esta separación en capas permite desarrollar y probar cada componente de forma 
 | IntelliJ IDEA Community o VS Code | IDE | Gratis |
 | Docker Desktop / Docker Engine | Contenerización | Gratis |
 | Node.js + npm | Frontend React | Gratis |
-| Python 3.10+ | Entrenamiento del modelo de IA | Gratis |
+| Python 3.10+ | Ingesta de fuentes, entrenamiento del modelo de IA y scoring | Gratis |
 | Ollama | Ejecución de LLM en local | Gratis |
 | Git | Control de versiones | Gratis |
 | Postman | Testing de APIs | Gratis |
@@ -136,6 +139,8 @@ No se requiere ninguna licencia de pago ni suscripción para completar el desarr
 - **abuse.ch (URLhaus, MalwareBazaar, ThreatFox)** — feeds públicos y gratuitos de IPs, dominios y hashes maliciosos.
 - **CIC-IDS o datasets de Kaggle sobre ciberseguridad** — útiles si se quiere entrenar un modelo de detección de anomalías más robusto.
 
+*Nota (octubre de 2026):* tras evaluar más de quince fuentes, el conjunto definitivo es ThreatFox y URLhaus (abuse.ch), blocklist.de, PhishTank y TweetFeed, con IPsum como señal de fiabilidad y Tranco como base de la clase no maliciosa. MISP, OTX y MalwareBazaar se descartaron; los motivos están en el documento de la fase de datos.
+
 ---
 
 ## 9. Modelo de datos simplificado (IOC)
@@ -146,9 +151,9 @@ Como punto de partida para el diseño de la base de datos y el chaincode:
 - `tipo` — IP, dominio, hash, URL, etc.
 - `valor` — el propio indicador (ej. la IP o el hash)
 - `fuente` — organización o feed que lo reportó
-- `severidad` — score calculado por el modelo de IA
+- `severidad` — score de 0 a 100 calculado por reglas de fiabilidad de las fuentes y el modelo de IA, con cada componente guardado por separado
 - `timestamp` — fecha de detección/reporte
-- `hash_blockchain` — referencia al registro inmutable correspondiente
+- `hash_blockchain` — referencia al registro inmutable correspondiente (solo en los IOCs que aporta una organización)
 - `estado` — activo, resuelto, falso positivo
 
 ---
@@ -158,8 +163,8 @@ Como punto de partida para el diseño de la base de datos y el chaincode:
 | Fase | Contenido | Duración estimada |
 |---|---|---|
 | 1. Diseño y modelado | Modelo de datos, diagrama de arquitectura, casos de uso | 1-2 semanas |
-| 2. Dataset y modelo de IA | Descarga de datos, entrenamiento del modelo de scoring, pruebas con LLM local | 2 semanas |
-| 3. Microservicios base | API Gateway, ingesta/normalización, base de datos | 3 semanas |
+| 2. Datos, ingesta y modelo de IA (Python) | Selección y validación de fuentes, base de datos, ingesta programada, entrenamiento del modelo y fórmula de severidad, pruebas con LLM local | 2 semanas |
+| 3. Microservicios Java | API Gateway con autenticación por organización y servicio de IOCs (consulta y aportaciones) sobre la base de datos compartida | 3 semanas |
 | 4. Red blockchain | Despliegue de Hyperledger Fabric, chaincode de registro | 3 semanas |
 | 5. Integración end-to-end | Conexión de todas las capas, dashboard React | 2 semanas |
 | 6. Pruebas, documentación y memoria | Testing, redacción de la memoria, preparación de la defensa | 3-4 semanas |
@@ -191,7 +196,8 @@ El proyecto puede desarrollarse íntegramente **sin coste económico**, siempre 
 | Complejidad de Hyperledger Fabric (curva de aprendizaje alta) | Empezar con la red de pruebas oficial ("test network") antes de personalizar el chaincode |
 | Dataset insuficiente o poco representativo para el modelo de IA | Combinar varias fuentes abiertas (MISP + OTX + abuse.ch) y documentar las limitaciones en la memoria |
 | Alcance demasiado ambicioso para el tiempo disponible | Priorizar el MVP definido en la sección 4 y dejar el resto como "trabajo futuro" |
-| Integración entre las tres capas (Java, IA en Python, blockchain) | Definir contratos de API claros (REST/JSON) entre capas desde el principio |
+| Integración entre las tres capas (Java, IA en Python, blockchain) | El esquema de PostgreSQL, versionado, es el contrato entre Python y Java; REST/JSON entre los microservicios y hacia los clientes |
+| Duplicar lógica entre Python y Java | Cada responsabilidad vive en un solo lado: ingesta, normalización y scoring en Python; API, aportaciones y blockchain en Java |
 
 ---
 
@@ -216,6 +222,18 @@ El proyecto se apoya en tendencias que el propio sector está señalando de cara
 - Minsait Cyber — tendencias de ciberseguridad para 2026 (Computer Weekly en español, infochannel.info, agenciaeluniversal.mx)
 - Indra Group — reestructuración de negocio hacia ciberdefensa, IA y tecnologías estratégicas (elconciso.es)
 - Minsait — información corporativa sobre áreas de actividad y ciberseguridad (EOI, indragroup.com)
+
+---
+
+## 16. Cambios respecto al planteamiento inicial
+
+**27 de octubre de 2026 — reparto entre Python y Java, blockchain y orden de trabajo.**
+
+1. **La ingesta y el scoring se quedan en Python; Java expone la plataforma.** El planteamiento inicial asignaba a los microservicios Java la ingesta, la normalización y el scoring. Durante la fase de datos esas funciones se construyeron en Python, se validaron y quedaron en ejecución horaria. Reescribirlas en Java duplicaría código ya probado y abriría la puerta a dos versiones que se contradigan. Por eso los microservicios Java se centran en lo que es propio de una plataforma de intercambio: la API de consulta, la recepción de los IOCs que aportan las organizaciones, la autenticación de cada organización y el registro en blockchain. Ambos lados se comunican a través de PostgreSQL.
+2. **En la blockchain se registran solo los IOCs que aportan las organizaciones.** Es la procedencia que hay que garantizar. Los feeds públicos ya conservan su fuente y cada descarga en la base de datos; registrarlos supondría miles de transacciones por hora en una red de prueba y sus términos de uso no autorizan expresamente redistribuirlos.
+3. **Orden: primero los microservicios Java, después Hyperledger Fabric.** Se construye sobre la base de datos que ya funciona y cada pieza se prueba por separado antes de unirlas.
+
+**Octubre de 2026 — fuentes y modelo.** El conjunto de fuentes y los rasgos del modelo cambiaron respecto a las secciones 6.2 y 8 originales: ver la nota de la sección 8 y el documento de la fase de datos.
 
 ---
 
