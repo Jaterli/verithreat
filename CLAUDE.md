@@ -57,6 +57,9 @@ verithreat/db/normalization_cases.json   casos compartidos de normalización (Py
 verithreat/services/ioc-service/ Spring Boot 4.0.9 (Java 17, Maven): API de consulta y aportaciones (paso 6a)
 verithreat/services/gateway/     Spring Cloud Gateway Server MVC 5.0 (Spring Cloud 2025.1.4): claves de API por
                                  organización (paso 6b); scripts/new-api-key.sh crea una clave y la muestra una vez
+verithreat/blockchain/network.sh red Fabric de prueba: up | deploy | smoke | down (usa ~/fabric/fabric-samples)
+verithreat/blockchain/chaincode/iocregistry/   chaincode Java 11 (Maven, fabric-chaincode-shim 2.5.11): RegisterIoc,
+                                 GetRecord, GetRecordsByIndicator
 verithreat/docker-compose.yml    por ahora solo `postgres` (puerto 5433 en 127.0.0.1; contraseña POSTGRES_PASSWORD en .env)
 ```
 
@@ -387,8 +390,17 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
    60 s = una revocación tarda ≤ 60 s. El Gateway exige `X-API-Key`, borra `X-Organization`/`X-Gateway-Token` del
    cliente, pone la organización real y el secreto `X-Gateway-Token`; `ioc-service` rechaza /api/** sin ese secreto
    si `GATEWAY_TOKEN` está configurado. 2 + 3 tests nuevos; prueba de principio a fin con 8 comprobaciones. Fuera por
-   complejidad: límite de peticiones por organización y rotación de claves); (c) red Fabric de prueba (2
-   organizaciones) y chaincode; (d) registrar en Fabric
+   complejidad: límite de peticiones por organización y rotación de claves); (c) ~~red Fabric y chaincode~~ (hecho
+   el 28-10-2026: Fabric **2.5.16 LTS** + CA 1.5.22 instalados por el autor en `~/fabric` (WSL), fuera del repo, más
+   la imagen `hyperledger/fabric-javaenv:2.5`; test-network con Org1MSP = `org-alpha` y Org2MSP = `org-beta`, canal
+   `iocchannel`. Chaincode `iocregistry` (4 tests): en la cadena va la **huella** sha256 del valor, no el IOC; la
+   organización sale del MSP que firma y la fecha de la transacción; hash canónico = sha256(tipo|huella|MSP|fecha);
+   registros inmutables; consulta por huella con clave compuesta. Despliegue propio con `peer lifecycle` y el jar ya
+   compilado (el deployCC de fabric-samples solo compila Java con Gradle). `jq` no está en WSL: `network.sh anchors`
+   fija los anchor peers editando el JSON con Python (necesarios para el descubrimiento del SDK). Prueba: registro
+   desde las dos organizaciones, consulta con ambos y rechazo de una huella no válida al avalar.
+   **La red no sobrevive a un reinicio de Docker**: `network.sh down && network.sh up && network.sh deploy` la recrea
+   vacía); (d) registrar en Fabric
    cada IOC aportado (hash canónico: tipo + valor normalizado + organización + timestamp). Entorno en WSL: Java 17,
    Maven, Docker y Node instalados; faltan los binarios de Fabric (Go no hace falta con chaincode en Java).
 7. Mantenimiento: revisar `DUAL_USE` (candidatos vistos: `upload.cc`, `replit.dev`, `trycloudflare.com`,
