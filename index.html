@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VeriThreat</title>
-    <meta name="description" content="VeriThreat: intercambio de Threat Intelligence entre organizaciones con IA explicable y blockchain permisionada. Roadmap del TFM y estado de la fase de datos.">
+    <meta name="description" content="VeriThreat: intercambio de Threat Intelligence entre organizaciones con IA explicable y blockchain permisionada. Estado del TFM: datos, ingesta, modelo, severidad, microservicios Java y registro en Hyperledger Fabric.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -38,11 +38,6 @@
         #red-nodos { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
         .capa { position: relative; z-index: 1; }
         .vidrio { background: rgba(13, 20, 36, 0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        .rejilla {
-            background-image: linear-gradient(rgba(34,211,238,.05) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(34,211,238,.05) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
         /* Red neuronal del hero */
         .nn-arista { stroke: rgba(148,163,184,.18); stroke-width: 1; }
         .nn-arista.activa { stroke: var(--violet); stroke-opacity: .7; transition: stroke .3s; }
@@ -51,16 +46,13 @@
         /* Cadena de bloques del roadmap */
         .bloque-enlace { position: absolute; left: 27px; top: 64px; bottom: -24px; width: 2px;
             background: repeating-linear-gradient(to bottom, rgba(148,163,184,.35) 0 6px, transparent 6px 12px); }
-        .bloque-enlace.hecho { background: linear-gradient(to bottom, var(--cyan), rgba(34,211,238,.2)); }
+        .bloque-enlace.hecho { background: linear-gradient(to bottom, var(--green), rgba(52,211,153,.35)); }
         @keyframes latido { 0%,100% { box-shadow: 0 0 0 0 rgba(34,211,238,.45); } 50% { box-shadow: 0 0 0 10px rgba(34,211,238,0); } }
         .latido { animation: latido 2.4s ease-in-out infinite; }
-        @keyframes barrido { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
-        .barrido::after { content: ''; position: absolute; inset: 0; width: 25%;
-            background: linear-gradient(90deg, transparent, rgba(34,211,238,.25), transparent); animation: barrido 2.8s linear infinite; }
         .barra { transition: width 1.1s cubic-bezier(.2,.8,.2,1); }
         #tooltip { position: fixed; z-index: 60; pointer-events: none; opacity: 0; transition: opacity .12s; }
         @media (prefers-reduced-motion: reduce) {
-            .latido, .barrido::after { animation: none; }
+            .latido { animation: none; }
             .barra { transition: none; }
             html { scroll-behavior: auto; }
         }
@@ -83,7 +75,8 @@
             <nav class="hidden md:flex items-center gap-8 text-sm text-slate-300">
                 <a href="#arquitectura" class="hover:text-cyan-400 transition-colors">Arquitectura</a>
                 <a href="#roadmap" class="hover:text-cyan-400 transition-colors">Roadmap</a>
-                <a href="#fase1" class="hover:text-cyan-400 transition-colors">Fase 1</a>
+                <a href="#fase1" class="hover:text-cyan-400 transition-colors">Datos e IA</a>
+                <a href="#plataforma" class="hover:text-cyan-400 transition-colors">Plataforma</a>
                 <a href="#stack" class="hover:text-cyan-400 transition-colors">Stack</a>
             </nav>
             <a href="#roadmap" class="text-sm font-semibold px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/25">
@@ -101,7 +94,7 @@
             <div>
                 <div class="inline-flex items-center gap-2 vidrio border border-cyan-500/30 rounded-full px-4 py-1.5 text-xs text-cyan-300 mb-7">
                     <span class="h-2 w-2 rounded-full bg-cyan-400 latido"></span>
-                    TFM · Fase 1 (datos y modelo de IA) en curso · octubre 2026
+                    TFM · 5 de 7 bloques hechos · siguiente: dashboard · octubre 2026
                 </div>
                 <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.08] mb-6">
                     Threat Intelligence<br>
@@ -109,13 +102,13 @@
                 </h1>
                 <p class="text-lg text-slate-400 leading-relaxed max-w-xl mb-9">
                     Una red de organizaciones que comparte indicadores de compromiso (dominios, URLs, hashes, IPs).
-                    Un <strong class="text-violet-300 font-medium">modelo de IA</strong> aprende a distinguir lo malicioso
-                    y puntúa su riesgo, y una <strong class="text-cyan-300 font-medium">blockchain permisionada</strong>
-                    registra el origen de cada indicador.
+                    Cada hora se ingieren feeds públicos y se calcula una <strong class="text-violet-300 font-medium">severidad explicable</strong>
+                    con la fiabilidad medida de cada fuente y un modelo de IA; lo que aporta cada organización queda registrado en una
+                    <strong class="text-cyan-300 font-medium">blockchain permisionada</strong>.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <a href="#fase1" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold shadow-xl shadow-cyan-500/20 hover:scale-[1.03] transition-transform">
-                        Cómo se ha hecho la fase 1 <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    <a href="#plataforma" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold shadow-xl shadow-cyan-500/20 hover:scale-[1.03] transition-transform">
+                        Qué funciona hoy <i data-lucide="arrow-right" class="w-5 h-5"></i>
                     </a>
                     <a href="#arquitectura" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl vidrio border border-slate-700 text-slate-200 font-semibold hover:border-cyan-500/50 transition-colors">
                         <i data-lucide="network" class="w-5 h-5 text-cyan-400"></i> Arquitectura
@@ -147,20 +140,20 @@
             </div>
         </div>
 
-        <!-- Cifras reales de la fase 1 -->
+        <!-- Cifras reales -->
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="vidrio border border-slate-800 rounded-xl p-4">
-                    <p class="text-2xl sm:text-3xl font-bold text-white">74.884</p>
-                    <p class="text-xs text-slate-400 mt-1">indicadores únicos unificados de 5 fuentes</p>
+                    <p class="text-2xl sm:text-3xl font-bold text-white">253.972</p>
+                    <p class="text-xs text-slate-400 mt-1">indicadores en la base de datos, todos con severidad (28-10-2026)</p>
                 </div>
                 <div class="vidrio border border-slate-800 rounded-xl p-4">
-                    <p class="text-2xl sm:text-3xl font-bold text-white">825</p>
-                    <p class="text-xs text-slate-400 mt-1">indicadores contrastados con VirusTotal</p>
+                    <p class="text-2xl sm:text-3xl font-bold text-white">1 h</p>
+                    <p class="text-xs text-slate-400 mt-1">ingesta y puntuación automáticas de 6 fuentes</p>
                 </div>
                 <div class="vidrio border border-slate-800 rounded-xl p-4">
-                    <p class="text-2xl sm:text-3xl font-bold text-white">0,91</p>
-                    <p class="text-xs text-slate-400 mt-1">ROC-AUC del primer ensayo del modelo</p>
+                    <p class="text-2xl sm:text-3xl font-bold text-white">0,81</p>
+                    <p class="text-xs text-slate-400 mt-1">PR-AUC del modelo desplegado con partición temporal (ROC-AUC 0,89)</p>
                 </div>
                 <div class="vidrio border border-slate-800 rounded-xl p-4">
                     <p class="text-2xl sm:text-3xl font-bold text-white">0 €</p>
@@ -202,40 +195,46 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mb-12">
                 <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Arquitectura</h2>
-                <p class="text-3xl md:text-4xl font-bold text-white">Del feed al analista, con cada paso trazado</p>
-                <p class="text-slate-400 mt-3">Cada componente del score se guarda por separado, para que se pueda explicar por qué un indicador tiene la severidad que tiene.</p>
+                <p class="text-3xl md:text-4xl font-bold text-white">Python ingiere y puntúa; Java expone; Fabric da fe</p>
+                <p class="text-slate-400 mt-3">Python y Java no se llaman entre sí: su contrato es el esquema de PostgreSQL, y ninguna lógica está duplicada. Cada componente del score se guarda por separado para poder explicar cada severidad.</p>
             </div>
 
-            <ol class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <ol class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <li class="vidrio relative rounded-2xl border border-slate-800 p-5">
-                    <span class="font-mono text-[11px] text-slate-500">01</span>
+                    <div class="flex items-center justify-between"><span class="font-mono text-[11px] text-slate-500">01</span><span class="text-[10px] font-mono text-emerald-300">EN MARCHA</span></div>
                     <i data-lucide="radar" class="w-7 h-7 text-slate-300 my-3"></i>
                     <h3 class="font-semibold text-white">Feeds OSINT</h3>
-                    <p class="text-xs text-slate-400 mt-1">abuse.ch, PhishTank, TweetFeed, blocklist.de, IPsum.</p>
-                </li>
-                <li class="vidrio relative rounded-2xl border border-slate-800 p-5">
-                    <span class="font-mono text-[11px] text-slate-500">02</span>
-                    <i data-lucide="server" class="w-7 h-7 text-blue-400 my-3"></i>
-                    <h3 class="font-semibold text-white">Ingesta Java</h3>
-                    <p class="text-xs text-slate-400 mt-1">Spring Boot normaliza y guarda indicadores y observaciones en PostgreSQL.</p>
+                    <p class="text-xs text-slate-400 mt-1">ThreatFox y URLhaus (abuse.ch), PhishTank, TweetFeed, blocklist.de; IPsum como señal de fiabilidad de las IPs.</p>
                 </li>
                 <li class="vidrio relative rounded-2xl border border-violet-500/40 p-5">
-                    <span class="font-mono text-[11px] text-slate-500">03</span>
+                    <div class="flex items-center justify-between"><span class="font-mono text-[11px] text-slate-500">02</span><span class="text-[10px] font-mono text-emerald-300">EN MARCHA</span></div>
                     <i data-lucide="brain" class="w-7 h-7 text-violet-400 my-3"></i>
-                    <h3 class="font-semibold text-white">Motor de IA</h3>
-                    <p class="text-xs text-slate-400 mt-1">scikit-learn puntúa el riesgo; reglas ponderan la fiabilidad de cada fuente. Resumen opcional con Ollama.</p>
-                </li>
-                <li class="vidrio relative rounded-2xl border border-cyan-500/40 p-5">
-                    <span class="font-mono text-[11px] text-slate-500">04</span>
-                    <i data-lucide="blocks" class="w-7 h-7 text-cyan-400 my-3"></i>
-                    <h3 class="font-semibold text-white">Hyperledger Fabric</h3>
-                    <p class="text-xs text-slate-400 mt-1">2–3 nodos registran hash y procedencia: tipo + valor + fuente + timestamp.</p>
+                    <h3 class="font-semibold text-white">Motor de ingesta e IA · Python</h3>
+                    <p class="text-xs text-slate-400 mt-1">Cada hora: descarga, valida, normaliza y carga; después calcula la severidad 0–100 con la fiabilidad de las fuentes y el modelo A (scikit-learn).</p>
                 </li>
                 <li class="vidrio relative rounded-2xl border border-slate-800 p-5">
-                    <span class="font-mono text-[11px] text-slate-500">05</span>
+                    <div class="flex items-center justify-between"><span class="font-mono text-[11px] text-slate-500">03</span><span class="text-[10px] font-mono text-emerald-300">EN MARCHA</span></div>
+                    <i data-lucide="database" class="w-7 h-7 text-blue-400 my-3"></i>
+                    <h3 class="font-semibold text-white">PostgreSQL</h3>
+                    <p class="text-xs text-slate-400 mt-1">Indicadores únicos, observaciones por fuente, descargas, señal de IPsum, versiones del modelo e historial de severidad.</p>
+                </li>
+                <li class="vidrio relative rounded-2xl border border-slate-800 p-5">
+                    <div class="flex items-center justify-between"><span class="font-mono text-[11px] text-slate-500">04</span><span class="text-[10px] font-mono text-emerald-300">HECHO</span></div>
+                    <i data-lucide="server" class="w-7 h-7 text-blue-400 my-3"></i>
+                    <h3 class="font-semibold text-white">Microservicios Java</h3>
+                    <p class="text-xs text-slate-400 mt-1">Spring Cloud Gateway autentica a cada organización con su clave de API; el servicio de IOCs da consulta, listado priorizado y aportaciones.</p>
+                </li>
+                <li class="vidrio relative rounded-2xl border border-cyan-500/40 p-5">
+                    <div class="flex items-center justify-between"><span class="font-mono text-[11px] text-slate-500">05</span><span class="text-[10px] font-mono text-emerald-300">HECHO</span></div>
+                    <i data-lucide="blocks" class="w-7 h-7 text-cyan-400 my-3"></i>
+                    <h3 class="font-semibold text-white">Hyperledger Fabric</h3>
+                    <p class="text-xs text-slate-400 mt-1">Dos organizaciones y un orderer. Registra cada aportación: huella del IOC, organización que firma y fecha, con un hash canónico inmutable.</p>
+                </li>
+                <li class="vidrio relative rounded-2xl border border-dashed border-slate-700 p-5">
+                    <div class="flex items-center justify-between"><span class="font-mono text-[11px] text-slate-500">06</span><span class="text-[10px] font-mono text-amber-300">SIGUIENTE</span></div>
                     <i data-lucide="layout-dashboard" class="w-7 h-7 text-emerald-400 my-3"></i>
                     <h3 class="font-semibold text-white">Dashboard SOC</h3>
-                    <p class="text-xs text-slate-400 mt-1">React + Recharts: alertas priorizadas y verificación en la cadena.</p>
+                    <p class="text-xs text-slate-400 mt-1">React + Recharts: alertas priorizadas por categoría, explicación de la severidad y sello de verificación en la cadena.</p>
                 </li>
             </ol>
         </div>
@@ -246,8 +245,8 @@
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mb-12">
                 <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Roadmap</h2>
-                <p class="text-3xl md:text-4xl font-bold text-white">Seis fases, encadenadas como bloques</p>
-                <p class="text-slate-400 mt-3">Cada bloque lleva el hash SHA-256 del anterior (se calcula en tu navegador). La fase de datos se adelantó a las demás porque el resto del sistema depende de qué fuentes y qué esquema se usan.</p>
+                <p class="text-3xl md:text-4xl font-bold text-white">Siete bloques encadenados, cinco ya confirmados</p>
+                <p class="text-slate-400 mt-3">Cada bloque lleva el hash SHA-256 del anterior (se calcula en tu navegador). Se empezó por los datos porque todo lo demás depende de qué fuentes y qué esquema se usan.</p>
             </div>
 
             <ol id="cadena" class="space-y-6"></ol>
@@ -258,9 +257,9 @@
     <section id="fase1" class="py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mb-14">
-                <h2 class="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">Fase 1 · Datos, fiabilidad y modelo de IA</h2>
+                <h2 class="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">Bloque 01 · Datos, fiabilidad y modelo de IA</h2>
                 <p class="text-3xl md:text-4xl font-bold text-white">Cómo se ha construido el conjunto con el que aprende la IA</p>
-                <p class="text-slate-400 mt-3">Para que un modelo aprenda a detectar lo malicioso hacen falta ejemplos de los dos lados y saber cuánto fiarse de cada uno. Estos son los seis pasos completados hasta hoy.</p>
+                <p class="text-slate-400 mt-3">Para que un modelo aprenda a detectar lo malicioso hacen falta ejemplos de los dos lados y saber cuánto fiarse de cada uno. Las cifras de este bloque salen de la exportación analizada a mediados de octubre de 2026.</p>
             </div>
 
             <div class="space-y-8">
@@ -270,7 +269,7 @@
                     <header>
                         <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 1 · HECHO</span>
                         <h3 class="text-xl font-semibold text-white mt-2">Selección de fuentes</h3>
-                        <p class="text-sm text-slate-400 mt-2">Se analizaron más de quince feeds y se quedaron los que aportan variedad sin duplicar.</p>
+                        <p class="text-sm text-slate-400 mt-2">Se analizaron más de quince feeds y se quedaron los que aportan variedad sin duplicar. Sus términos de uso se leyeron uno a uno: cubren el TFM, pero la mayoría no autoriza expresamente redistribuir los IOCs.</p>
                     </header>
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
@@ -304,16 +303,16 @@
                     <header>
                         <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 2 · HECHO</span>
                         <h3 class="text-xl font-semibold text-white mt-2">Limpieza y esquema común</h3>
-                        <p class="text-sm text-slate-400 mt-2">Cada fuente trae su formato. Se unifican en un <strong class="text-slate-200 font-medium">indicador</strong> único <span class="font-mono text-xs">(tipo, valor)</span> con una o varias <strong class="text-slate-200 font-medium">observaciones</strong> por fuente.</p>
+                        <p class="text-sm text-slate-400 mt-2">Cada fuente trae su formato. Se unifican en un <strong class="text-slate-200 font-medium">indicador</strong> único <span class="font-mono text-xs">(tipo, valor normalizado)</span> con una o varias <strong class="text-slate-200 font-medium">observaciones</strong> por fuente.</p>
                         <ul class="mt-4 space-y-2 text-xs text-slate-400">
-                            <li class="flex gap-2"><i data-lucide="filter" class="w-4 h-4 text-cyan-400 shrink-0"></i><span>Lista <span class="font-mono">DOBLE_USO</span>: GitHub, Dropbox, acortadores… no se etiquetan como dominio malicioso.</span></li>
+                            <li class="flex gap-2"><i data-lucide="filter" class="w-4 h-4 text-cyan-400 shrink-0"></i><span>Lista <span class="font-mono">DUAL_USE</span>: GitHub, Dropbox, acortadores… no se etiquetan como dominio malicioso.</span></li>
                             <li class="flex gap-2"><i data-lucide="boxes" class="w-4 h-4 text-cyan-400 shrink-0"></i><span>30 bloques /24 de blocklist.de (7.680 IPs) se tratan como un único indicador <span class="font-mono">cidr</span>, no como ataques individuales.</span></li>
                         </ul>
                     </header>
                     <figure>
-                        <figcaption class="flex items-baseline justify-between mb-4">
+                        <figcaption class="flex items-baseline justify-between mb-4 gap-4">
                             <span class="text-sm font-medium text-slate-200">Indicadores únicos por tipo</span>
-                            <span class="text-xs text-slate-500">75.511 observaciones → 74.884 indicadores</span>
+                            <span class="text-xs text-slate-500">exportación analizada: 75.511 observaciones → 74.884 indicadores</span>
                         </figcaption>
                         <div id="graf-tipos" class="space-y-2.5"></div>
                     </figure>
@@ -334,8 +333,8 @@
                         </div>
                         <div class="rounded-xl border border-emerald-400/30 bg-emerald-500/5 p-5">
                             <p class="text-xs uppercase tracking-wider text-emerald-300 mb-2">Clase no maliciosa</p>
-                            <p class="text-3xl font-bold text-white">49.766</p>
-                            <p class="text-sm text-slate-400 mt-1">top 50.000 de Tranco, menos 229 que chocan con fuentes maliciosas y 43 de doble uso.</p>
+                            <p class="text-3xl font-bold text-white">49.767</p>
+                            <p class="text-sm text-slate-400 mt-1">top 50.000 de Tranco, menos 228 que chocan con fuentes maliciosas y 43 de doble uso.</p>
                         </div>
                         <div class="sm:col-span-2 rounded-xl border border-slate-800 bg-ink-950/60 p-4 text-sm text-slate-400 flex gap-3">
                             <i data-lucide="lock" class="w-5 h-5 text-violet-400 shrink-0 mt-0.5"></i>
@@ -366,7 +365,7 @@
                     <header>
                         <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 5 · HECHO</span>
                         <h3 class="text-xl font-semibold text-white mt-2">Pesos de fiabilidad</h3>
-                        <p class="text-sm text-slate-400 mt-2">De la validación salen pesos <strong class="text-slate-200 font-medium">preliminares y configurables</strong> para las reglas del score. La misma fuente se gradúa según señales propias.</p>
+                        <p class="text-sm text-slate-400 mt-2">De la validación salen pesos <strong class="text-slate-200 font-medium">configurables</strong> por fuente y tipo de indicador (las URLs y los hashes llevan peso propio). La misma fuente se gradúa según señales propias.</p>
                     </header>
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
@@ -385,7 +384,7 @@
                 <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-violet-500/30 rounded-2xl p-6 md:p-8">
                     <header>
                         <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> PASO 6 · HECHO</span>
-                        <h3 class="text-xl font-semibold text-white mt-2">Primer ensayo del modelo</h3>
+                        <h3 class="text-xl font-semibold text-white mt-2">Ensayo del modelo</h3>
                         <p class="text-sm text-slate-400 mt-2">Gradient boosting sobre rasgos léxicos del dominio. El test tiene un 17,6 % de maliciosos, así que la métrica principal es PR-AUC.</p>
                         <p class="text-sm text-violet-200 mt-4 border-l-2 border-violet-400 pl-3">La variedad de fuentes pesa más que el volumen.</p>
                     </header>
@@ -402,21 +401,21 @@
                     </div>
                 </article>
 
-                <!-- Pendiente dentro de la fase -->
+                <!-- Decisiones e hipótesis -->
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="rounded-2xl border border-dashed border-slate-700 p-6">
-                        <p class="flex items-center gap-2 text-xs font-mono text-amber-300 mb-3"><i data-lucide="clock" class="w-4 h-4"></i> QUEDA EN LA FASE 1</p>
+                        <p class="flex items-center gap-2 text-xs font-mono text-cyan-300 mb-3"><i data-lucide="list-checks" class="w-4 h-4"></i> DECISIONES QUE SALIERON DE AQUÍ</p>
                         <ul class="space-y-2 text-sm text-slate-400">
-                            <li class="flex gap-2"><i data-lucide="circle-dashed" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>Entrenamiento definitivo con partición por campaña y por tiempo, y probabilidad calibrada.</li>
-                            <li class="flex gap-2"><i data-lucide="circle-dashed" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>Fórmula de severidad: reglas + pesos, cada componente guardado aparte.</li>
-                            <li class="flex gap-2"><i data-lucide="circle-dashed" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>API de scoring y resumen de alertas con LLM local (Ollama).</li>
-                            <li class="flex gap-2"><i data-lucide="circle-dashed" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>Decidir si URLs y hashes llevan pesos distintos a los de dominios e IPs.</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>Sin ventana temporal configurable: la antigüedad entra solo como decaimiento en la severidad.</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>El modelo es una señal débil dentro de la severidad, no el veredicto: su probabilidad ordena, no mide riesgo real.</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>La corroboración se cuenta por familias de fuentes (ThreatFox y URLhaus son una sola: abuse.ch).</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>Criterio general: no añadir complejidad que no mejore claramente la detección.</li>
                         </ul>
                     </div>
                     <div class="rounded-2xl border border-dashed border-slate-700 p-6">
                         <p class="flex items-center gap-2 text-xs font-mono text-slate-400 mb-3"><i data-lucide="flask-conical" class="w-4 h-4"></i> HIPÓTESIS AÚN SIN VERIFICAR</p>
                         <ul class="space-y-2 text-sm text-slate-400">
-                            <li>Términos de uso de la mayoría de fuentes (solo se han leído los de TweetFeed).</li>
+                            <li>Si las fuentes (salvo TweetFeed e IPsum) permiten redistribuir sus IOCs a terceros: sus términos no lo dicen.</li>
                             <li>md5/sha1 y las IPs de ThreatFox y TweetFeed, sin validar con VirusTotal.</li>
                             <li>Que los hashes de TweetFeed con 0 detecciones sean benignos y no malware sin detectar.</li>
                             <li>Qué lista de IPsum contiene los bloques /24 de blocklist.de.</li>
@@ -427,8 +426,159 @@
         </div>
     </section>
 
+    <!-- Plataforma: bloques 02–05 -->
+    <section id="plataforma" class="py-20 bg-ink-850/80 border-y border-slate-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-14">
+                <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Bloques 02–05 · De los datos a la plataforma</h2>
+                <p class="text-3xl md:text-4xl font-bold text-white">Lo que ya funciona, de principio a fin</p>
+                <p class="text-slate-400 mt-3">Del 16 al 28 de octubre de 2026 las decisiones de la fase de datos se convirtieron en un sistema en ejecución: ingesta horaria, severidad explicable, una API protegida por organización y registro en blockchain de lo que aporta cada una.</p>
+            </div>
+
+            <div class="space-y-8">
+
+                <!-- Base de datos e ingesta -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-slate-800 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> BLOQUES 02–03 · HECHOS</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">Base de datos e ingesta horaria</h3>
+                        <p class="text-sm text-slate-400 mt-2">PostgreSQL en Docker con carga <strong class="text-slate-200 font-medium">idempotente</strong>: cada fichero se identifica por su sha256, recargarlo no cambia nada y una descarga antigua no pisa a una más reciente.</p>
+                        <ul class="mt-4 space-y-2 text-xs text-slate-400">
+                            <li class="flex gap-2"><i data-lucide="fingerprint" class="w-4 h-4 text-cyan-400 shrink-0"></i><span>Indicador único por tipo y huella sha256 del valor (hay URLs de 25.000 caracteres).</span></li>
+                            <li class="flex gap-2"><i data-lucide="shield" class="w-4 h-4 text-cyan-400 shrink-0"></i><span>Cada fuente se valida y falla por separado; las claves nunca salen en logs ni en el estado.</span></li>
+                            <li class="flex gap-2"><i data-lucide="git-compare" class="w-4 h-4 text-cyan-400 shrink-0"></i><span>La normalización es idéntica en Python y en Java: 35 casos compartidos lo comprueban.</span></li>
+                        </ul>
+                    </header>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">Qué se descarga y cada cuánto</p>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">ThreatFox</span><span class="text-slate-400">API, días desde el último éxito · 1 h</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">URLhaus</span><span class="text-slate-400">exportación reciente · 1 h</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">blocklist.de</span><span class="text-slate-400">últimas 48 h · 1 h</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">TweetFeed</span><span class="text-slate-400">feeds oficiales con ETag · 1 h</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-cyan-300 w-28 shrink-0">PhishTank</span><span class="text-slate-400">online-valid con ETag · 6 h</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-violet-300 w-28 shrink-0">IPsum</span><span class="text-slate-400">niveles por IP · 24 h</span></li>
+                            </ul>
+                            <p class="text-xs text-slate-500 mt-4">Programador de tareas de Windows → WSL, cada hora en el minuto 7; la severidad se recalcula justo después (~15 s).</p>
+                        </div>
+                        <figure>
+                            <figcaption class="flex items-baseline justify-between mb-4 gap-4">
+                                <span class="text-sm font-medium text-slate-200">Indicadores en la base, por tipo</span>
+                                <span class="text-xs text-slate-500">28-10-2026</span>
+                            </figcaption>
+                            <div id="graf-tipos-db" class="space-y-2.5"></div>
+                        </figure>
+                    </div>
+                </article>
+
+                <!-- Severidad -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-violet-500/30 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> BLOQUE 03 · HECHO</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">Modelo desplegado y severidad explicable</h3>
+                        <p class="text-sm text-slate-400 mt-2">El modelo A se entrena con los datos de la base y se evalúa por dominio registrable, por tiempo (20 % más reciente) y por familia. Partición temporal: <span class="font-mono text-slate-200">PR-AUC 0,81 · ROC-AUC 0,89</span>, sin pérdida frente a la aleatoria.</p>
+                        <p class="text-xs text-slate-500 mt-4">La severidad solo se compara dentro de una categoría: una IP de ataque y una URL de phishing no se ordenan juntas.</p>
+                    </header>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">Cómo se calcula (cada término se guarda)</p>
+                            <ol class="space-y-3 text-sm text-slate-400">
+                                <li class="flex gap-3"><span class="font-mono text-violet-300 shrink-0">1</span><span><span class="text-slate-200">Fiabilidad</span> de cada observación por fuente y tipo (PhishTank 0,97, abuse.ch 0,59, TweetFeed según etiqueta, IPs según IPsum…).</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-violet-300 shrink-0">2</span><span><span class="text-slate-200">Decaimiento</span> por antigüedad: vida media de 7 días en IPs, 14 en URLs y 30 en dominios; los hashes no caducan.</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-violet-300 shrink-0">3</span><span><span class="text-slate-200">Evidencia</span>: O probabilístico entre familias de fuentes, que premia la corroboración independiente.</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-violet-300 shrink-0">4</span><span><span class="text-slate-200">Modelo A</span> como señal débil en dominios y hosts (β = 0,3).</span></li>
+                                <li class="flex gap-3"><span class="font-mono text-violet-300 shrink-0">5</span><span><span class="text-slate-200">Disputado</span>: dominio del top 10.000 de Tranco → marcado y severidad × 0,5.</span></li>
+                            </ol>
+                        </div>
+                        <figure>
+                            <figcaption class="flex items-baseline justify-between mb-4 gap-4">
+                                <span class="text-sm font-medium text-slate-200">Severidad mediana por categoría y tipo</span>
+                                <span class="text-xs text-slate-500">primera puntuación</span>
+                            </figcaption>
+                            <div id="graf-severidad" class="space-y-2"></div>
+                            <p class="text-xs text-slate-500 mt-3">Las IPs de ataque tienen mediana 36 pero p90 96: IPsum separa las que están en muchas listas.</p>
+                        </figure>
+                    </div>
+                </article>
+
+                <!-- Microservicios -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-slate-800 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> BLOQUE 04 · HECHO</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">API de IOCs y Gateway</h3>
+                        <p class="text-sm text-slate-400 mt-2">Spring Boot 4 sobre la misma base de datos. Cada organización es una fuente más, con fiabilidad configurable (0,5): lo que aporta entra en la severidad en la siguiente ejecución horaria.</p>
+                    </header>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">Endpoints</p>
+                            <ul class="space-y-2 font-mono text-[11px] sm:text-xs">
+                                <li class="flex gap-2 flex-wrap"><span class="text-emerald-300 w-10 shrink-0">GET</span><span class="text-slate-300 break-all">/indicators/lookup?type&amp;value</span></li>
+                                <li class="flex gap-2 flex-wrap"><span class="text-emerald-300 w-10 shrink-0">GET</span><span class="text-slate-300 break-all">/indicators?category&amp;type&amp;minSeverity</span></li>
+                                <li class="flex gap-2 flex-wrap"><span class="text-emerald-300 w-10 shrink-0">GET</span><span class="text-slate-300 break-all">/indicators/{id} · observaciones, historial, Fabric</span></li>
+                                <li class="flex gap-2 flex-wrap"><span class="text-amber-300 w-10 shrink-0">POST</span><span class="text-slate-300 break-all">/sightings · aportación de la organización</span></li>
+                            </ul>
+                            <p class="text-xs text-slate-500 mt-4">Documentados con OpenAPI (Swagger UI). Errores en formato ProblemDetail.</p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-wider text-slate-500 mb-3">Seguridad por organización</p>
+                            <ul class="space-y-2 text-sm text-slate-400">
+                                <li class="flex gap-2"><i data-lucide="key" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>Clave de API de 192 bits por organización; en la base solo se guarda su sha256 y se puede revocar.</li>
+                                <li class="flex gap-2"><i data-lucide="route" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>El Gateway borra las cabeceras que envía el cliente y pone la organización real.</li>
+                                <li class="flex gap-2"><i data-lucide="lock-keyhole" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>El servicio de IOCs rechaza lo que no venga del Gateway (secreto compartido).</li>
+                                <li class="flex gap-2"><i data-lucide="flask-conical" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>Tests de integración con PostgreSQL real (Testcontainers).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Fabric -->
+                <article class="grid lg:grid-cols-[280px_1fr] gap-6 vidrio border border-cyan-500/30 rounded-2xl p-6 md:p-8">
+                    <header>
+                        <span class="inline-flex items-center gap-2 text-xs font-mono text-emerald-300"><i data-lucide="check-circle-2" class="w-4 h-4"></i> BLOQUE 05 · HECHO</span>
+                        <h3 class="text-xl font-semibold text-white mt-2">Registro en Hyperledger Fabric</h3>
+                        <p class="text-sm text-slate-400 mt-2">Fabric 2.5 LTS con dos organizaciones y el canal <span class="font-mono text-xs">iocchannel</span>. Solo se registran las <strong class="text-slate-200 font-medium">aportaciones de las organizaciones</strong>: los feeds públicos ya tienen su procedencia en la base y sus términos no autorizan redistribuirlos.</p>
+                        <p class="text-sm text-cyan-200 mt-4 border-l-2 border-cyan-400 pl-3">En la cadena va la huella del IOC, no el IOC.</p>
+                    </header>
+                    <div>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 mb-4">Recorrido de una aportación</p>
+                        <ol class="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                            <li class="rounded-xl border border-slate-800 bg-ink-950/60 p-4">
+                                <span class="font-mono text-[11px] text-slate-500">1 · API</span>
+                                <p class="text-sm text-slate-200 mt-1">POST /sightings</p>
+                                <p class="text-xs text-slate-400 mt-1">Se normaliza y se guarda la observación.</p>
+                            </li>
+                            <li class="rounded-xl border border-slate-800 bg-ink-950/60 p-4">
+                                <span class="font-mono text-[11px] text-slate-500">2 · Bandeja de salida</span>
+                                <p class="text-sm text-slate-200 mt-1">pending</p>
+                                <p class="text-xs text-slate-400 mt-1">En la misma transacción: no se pierde aunque Fabric esté caído.</p>
+                            </li>
+                            <li class="rounded-xl border border-slate-800 bg-ink-950/60 p-4">
+                                <span class="font-mono text-[11px] text-slate-500">3 · Worker (5 s)</span>
+                                <p class="text-sm text-slate-200 mt-1">RegisterIoc</p>
+                                <p class="text-xs text-slate-400 mt-1">Firmado con la identidad de la organización; reintentos con espera creciente.</p>
+                            </li>
+                            <li class="rounded-xl border border-cyan-500/40 bg-cyan-500/5 p-4">
+                                <span class="font-mono text-[11px] text-slate-500">4 · Cadena</span>
+                                <p class="text-sm text-cyan-200 mt-1">registered</p>
+                                <p class="text-xs text-slate-400 mt-1">Hash canónico y transacción visibles en el detalle del indicador.</p>
+                            </li>
+                        </ol>
+                        <div class="mt-5 rounded-xl border border-slate-800 bg-ink-950/80 p-4 font-mono text-[11px] sm:text-xs text-slate-400 break-all">
+                            <span class="text-slate-500">hash canónico =</span> <span class="text-cyan-300">sha256</span>(tipo <span class="text-slate-600">|</span> huella del valor <span class="text-slate-600">|</span> MSP que firma <span class="text-slate-600">|</span> fecha de la transacción)
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4 mt-5 text-sm text-slate-400">
+                            <p class="flex gap-2"><i data-lucide="badge-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i><span>Probado con la red real: dos organizaciones aportan el mismo dominio y la API y la cadena coinciden en hash, transacción y organización.</span></p>
+                            <p class="flex gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i><span><span class="text-slate-200">Simplificación del TFM:</span> el servicio firma en nombre de cada organización. En producción, cada una firmaría con su propia clave.</span></p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
     <!-- Stack -->
-    <section id="stack" class="py-20 bg-ink-850/80 border-t border-slate-800/50">
+    <section id="stack" class="py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mb-12">
                 <h2 class="text-xs font-semibold text-cyan-400 uppercase tracking-widest mb-2">Stack</h2>
@@ -438,22 +588,22 @@
                 <div class="vidrio p-6 rounded-2xl border border-violet-500/30">
                     <i data-lucide="bot" class="w-7 h-7 text-violet-400 mb-4"></i>
                     <h3 class="text-white font-semibold mb-2">IA y datos <span class="ml-1 text-[10px] font-mono text-emerald-300 border border-emerald-400/40 rounded px-1.5 py-0.5 align-middle">EN USO</span></h3>
-                    <p class="text-xs text-slate-400">Python, pandas, scikit-learn, tldextract, dnspython, Jupyter, API v3 de VirusTotal, Ollama.</p>
+                    <p class="text-xs text-slate-400">Python, pandas, scikit-learn, tldextract, psycopg, Jupyter, API v3 de VirusTotal (solo validación). Ollama, opcional.</p>
                 </div>
-                <div class="vidrio p-6 rounded-2xl border border-slate-800">
+                <div class="vidrio p-6 rounded-2xl border border-blue-500/30">
                     <i data-lucide="code-2" class="w-7 h-7 text-blue-400 mb-4"></i>
-                    <h3 class="text-white font-semibold mb-2">Backend</h3>
-                    <p class="text-xs text-slate-400">Java 17, Spring Boot, Spring Cloud Gateway, PostgreSQL, Kafka o RabbitMQ (opcional).</p>
+                    <h3 class="text-white font-semibold mb-2">Backend <span class="ml-1 text-[10px] font-mono text-emerald-300 border border-emerald-400/40 rounded px-1.5 py-0.5 align-middle">EN USO</span></h3>
+                    <p class="text-xs text-slate-400">Java 17, Spring Boot 4, Spring Cloud Gateway, PostgreSQL 17, springdoc OpenAPI, Testcontainers.</p>
                 </div>
-                <div class="vidrio p-6 rounded-2xl border border-slate-800">
+                <div class="vidrio p-6 rounded-2xl border border-cyan-500/30">
                     <i data-lucide="blocks" class="w-7 h-7 text-cyan-400 mb-4"></i>
-                    <h3 class="text-white font-semibold mb-2">Blockchain</h3>
-                    <p class="text-xs text-slate-400">Hyperledger Fabric (2–3 nodos), chaincode en Go o Java, Fabric SDK for Java.</p>
+                    <h3 class="text-white font-semibold mb-2">Blockchain <span class="ml-1 text-[10px] font-mono text-emerald-300 border border-emerald-400/40 rounded px-1.5 py-0.5 align-middle">EN USO</span></h3>
+                    <p class="text-xs text-slate-400">Hyperledger Fabric 2.5 LTS (test-network), chaincode en Java, Fabric Gateway SDK para Java.</p>
                 </div>
                 <div class="vidrio p-6 rounded-2xl border border-slate-800">
                     <i data-lucide="layout-dashboard" class="w-7 h-7 text-emerald-400 mb-4"></i>
                     <h3 class="text-white font-semibold mb-2">Frontend y DevOps</h3>
-                    <p class="text-xs text-slate-400">React, Tailwind CSS, Recharts, Docker Compose, GitHub Actions.</p>
+                    <p class="text-xs text-slate-400">React, Tailwind CSS, Recharts (siguiente bloque). Docker Compose y WSL en uso; GitHub Actions, previsto.</p>
                 </div>
             </div>
         </div>
@@ -469,7 +619,7 @@
                 </span>
                 <span class="text-lg font-bold text-white tracking-wider">VERI<span class="text-cyan-400">THREAT</span></span>
             </div>
-            <p class="text-xs text-slate-500 text-center">Trabajo Fin de Máster · Full Stack + Blockchain · 2026. Cifras de la fase de datos a 15 de octubre de 2026.</p>
+            <p class="text-xs text-slate-500 text-center">Trabajo Fin de Máster · Full Stack + Blockchain · 2026. Estado a 28 de octubre de 2026.</p>
             <p class="text-xs text-slate-400">Desarrollado por <a href="https://jaterli.com" target="_blank" rel="noopener" class="text-cyan-400 hover:text-cyan-300 underline-offset-4 hover:underline">Jaterli</a></p>
         </div>
     </footer>
@@ -637,7 +787,7 @@
             barra.style.width = (e.p * 100) + '%';
             document.getElementById('clf-p').textContent = e.p.toFixed(2).replace('.', ',');
             const v = document.getElementById('clf-veredicto');
-            v.textContent = mal ? '⚠ sospechoso → reglas de fiabilidad' : '✓ sin indicios';
+            v.textContent = mal ? '⚠ señal débil → se suma a la evidencia de las fuentes' : '✓ sin indicios léxicos';
             v.className = 'min-w-0 text-right ' + (mal ? 'text-red-300' : 'text-emerald-300');
             aristas.forEach(a => a.classList.toggle('activa', Math.random() < .22));
             circulos.forEach(c => c.classList.toggle('activo', Math.random() < .35));
@@ -670,7 +820,7 @@
                     <span class="relative flex-1 h-3.5 rounded-r bg-slate-800/60">
                         <span class="barra absolute inset-y-0 left-0 rounded-r group-hover:brightness-125" style="width:0;background:${d.color || color}"></span>
                     </span>
-                    <span class="w-14 text-right font-mono text-slate-300">${formato(d.v)}</span>`;
+                    <span class="w-16 text-right font-mono text-slate-300">${formato(d.v)}</span>`;
                 cont.appendChild(fila);
                 const b = fila.querySelector('.barra');
                 barrasPendientes.push({ b, w: Math.max(.6, (d.v / tope) * 100) });
@@ -682,6 +832,12 @@
             { etiqueta: 'url', v: 46293 }, { etiqueta: 'ip', v: 18338 }, { etiqueta: 'sha256', v: 6307 },
             { etiqueta: 'domain', v: 3467 }, { etiqueta: 'md5', v: 273 }, { etiqueta: 'sha1', v: 176 }, { etiqueta: 'cidr (/24)', v: 30 }
         ], { formato: v => fmt.format(v), ancho: 'w-20', tooltip: d => `${d.etiqueta}: ${fmt.format(d.v)} indicadores` });
+
+        // Base de datos a 28-10-2026 (crece cada hora con la ingesta)
+        barras('graf-tipos-db', [
+            { etiqueta: 'url', v: 156584 }, { etiqueta: 'ip', v: 68591 }, { etiqueta: 'sha256', v: 15765 },
+            { etiqueta: 'domain', v: 10617 }, { etiqueta: 'md5', v: 1273 }, { etiqueta: 'sha1', v: 1112 }, { etiqueta: 'cidr (/24)', v: 30 }
+        ], { formato: v => fmt.format(v), ancho: 'w-20', color: '#3b82f6', tooltip: d => `${d.etiqueta}: ${fmt.format(d.v)} indicadores` });
 
         // Validación VirusTotal (CLAUDE.md §5). Gris = grupos de control no maliciosos.
         const CONTROL = '#64748b';
@@ -713,9 +869,16 @@
         ], { max: 100, formato: pct, color: '#a78bfa', ancho: 'w-24', tooltip: d => `${d.etiqueta}: ${pct(d.v)} confirmadas (n = ${d.n})` });
 
         barras('graf-ablacion', [
-            { etiqueta: 'todas', v: .91 }, { etiqueta: 'sin PhishTank', v: .92 },
+            { etiqueta: 'todas', v: .90 }, { etiqueta: 'sin PhishTank', v: .92 },
             { etiqueta: 'sin TweetFeed', v: .85 }, { etiqueta: 'sin abuse.ch', v: .79 }
         ], { max: 1, formato: v => v.toFixed(2).replace('.', ','), color: '#a78bfa', ancho: 'w-28', tooltip: d => `ROC-AUC ${d.etiqueta}: ${d.v.toFixed(2).replace('.', ',')}` });
+
+        // Primera puntuación de score.py (19-10-2026), mediana por categoría y tipo
+        barras('graf-severidad', [
+            { etiqueta: 'URLs de phishing', v: 99 }, { etiqueta: 'sha256 de distribución', v: 90 },
+            { etiqueta: 'dominios C2', v: 60 }, { etiqueta: 'URLs de distribución', v: 58 },
+            { etiqueta: 'IPs de ataque', v: 36 }
+        ], { max: 100, formato: v => String(v), color: '#a78bfa', ancho: 'w-36 sm:w-44', tooltip: d => `${d.etiqueta}: mediana ${d.v} / 100` });
 
         // Curva de aprendizaje como columnas
         const curva = document.getElementById('graf-curva');
@@ -740,30 +903,29 @@
                 if (!en.isIntersecting) return;
                 barrasPendientes.filter(i => en.target.contains(i.b)).forEach(revelar);
                 obs.unobserve(en.target);
-            }), { threshold: .25 });
-            document.querySelectorAll('#fase1 figure, #fase1 article').forEach(el => obs.observe(el));
+            }), { threshold: .2 });
+            document.querySelectorAll('#fase1 article, #plataforma article').forEach(el => obs.observe(el));
         } else {
             barrasPendientes.forEach(revelar);
         }
 
         /* ---------- Roadmap: cadena de bloques con hash real ---------- */
+        // estado: hecho | siguiente | pendiente
         const fases = [
-            {
-                n: '01', titulo: 'Datos, fiabilidad y modelo de IA', estado: 'curso', icono: 'brain',
-                resumen: 'Fuentes seleccionadas, esquema común, clases de entrenamiento, validación con VirusTotal, pesos de fiabilidad y primer ensayo del modelo.',
-                hecho: ['Selección de fuentes', 'Limpieza y esquema común', 'Clases para entrenar', 'Validación con VirusTotal', 'Pesos de fiabilidad', 'Primer ensayo del modelo'],
-                falta: ['Entrenamiento definitivo y calibración', 'Fórmula de severidad', 'API de scoring + resumen LLM']
-            },
-            { n: '02', titulo: 'Esquema PostgreSQL y carga idempotente', estado: 'pendiente', icono: 'database',
-              resumen: 'Tablas indicator y sighting (incl. cidr, familia de fuente y categoría), carga con ON CONFLICT y guardado del crudo con fecha de descarga.' },
-            { n: '03', titulo: 'Microservicios Java e ingesta programada', estado: 'pendiente', icono: 'server',
-              resumen: 'API Gateway, servicio de ingesta y de scoring en Spring Boot; feeds programados (abuse.ch, TweetFeed, PhishTank, blocklist.de cada hora, IPsum diario).' },
-            { n: '04', titulo: 'Red blockchain con Hyperledger Fabric', estado: 'pendiente', icono: 'blocks',
-              resumen: 'Red de 2–3 organizaciones y chaincode que registra y verifica el hash canónico de cada IOC (tipo + valor + fuente + timestamp).' },
-            { n: '05', titulo: 'Dashboard React e integración end-to-end', estado: 'pendiente', icono: 'layout-dashboard',
-              resumen: 'Tabla de IOCs priorizados, detalle con resumen del LLM, sello de verificación en la cadena y flujo completo feed → IA → blockchain → analista.' },
-            { n: '06', titulo: 'Pruebas, memoria y defensa', estado: 'pendiente', icono: 'file-text',
-              resumen: 'Tests de los servicios, justificación de los pesos en la memoria del TFM, documentación de despliegue y demo reproducible.' }
+            { n: '01', titulo: 'Datos, fiabilidad y modelo de IA', estado: 'hecho', fecha: '15-10-2026', icono: 'brain', enlace: '#fase1',
+              resumen: 'Fuentes seleccionadas y sus términos de uso, esquema común, clases de entrenamiento, validación de 825 indicadores con VirusTotal, pesos de fiabilidad y ensayo del modelo.' },
+            { n: '02', titulo: 'Esquema PostgreSQL y carga idempotente', estado: 'hecho', fecha: '16-10-2026', icono: 'database', enlace: '#plataforma',
+              resumen: 'Indicadores únicos por huella, observaciones por fuente, descargas por sha256 y señal de IPsum. Volver a cargar no cambia nada.' },
+            { n: '03', titulo: 'Ingesta horaria, modelo A y severidad', estado: 'hecho', fecha: '19-10-2026', icono: 'timer', enlace: '#plataforma',
+              resumen: 'Seis fuentes descargadas según sus términos, modelo entrenado desde la base de datos y severidad 0–100 recalculada después de cada ingesta.' },
+            { n: '04', titulo: 'Microservicios Java: API de IOCs y Gateway', estado: 'hecho', fecha: '27-10-2026', icono: 'server', enlace: '#plataforma',
+              resumen: 'Consulta, listado priorizado y aportaciones de las organizaciones; claves de API por organización y servicio interno solo accesible a través del Gateway.' },
+            { n: '05', titulo: 'Hyperledger Fabric: red, chaincode y registro', estado: 'hecho', fecha: '28-10-2026', icono: 'blocks', enlace: '#plataforma',
+              resumen: 'Red de dos organizaciones, chaincode iocregistry y bandeja de salida que registra cada aportación nueva con reintentos y sin duplicados.' },
+            { n: '06', titulo: 'Dashboard React', estado: 'siguiente', icono: 'layout-dashboard',
+              resumen: 'Tabla de IOCs priorizados por categoría, detalle con los componentes de la severidad y sello de verificación en la cadena; resumen opcional con un LLM local.' },
+            { n: '07', titulo: 'Pruebas, memoria y defensa', estado: 'pendiente', icono: 'file-text',
+              resumen: 'Revisar la distribución de la severidad con días de ingesta, justificar los pesos en la memoria, documentar el despliegue y preparar una demo reproducible.' }
         ];
 
         async function sha256(texto) {
@@ -772,43 +934,47 @@
             return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
+        const ESTILO = {
+            hecho: {
+                caja: 'bg-emerald-500/10 border-emerald-400/50', icono: 'text-emerald-300', borde: 'border-emerald-500/25', titulo: 'text-white', hash: 'text-emerald-400/80',
+                chip: '<span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2.5 py-0.5">Confirmado</span>'
+            },
+            siguiente: {
+                caja: 'bg-cyan-500/15 border-cyan-400/60 latido', icono: 'text-cyan-300', borde: 'border-cyan-500/40', titulo: 'text-white', hash: 'text-cyan-400/80',
+                chip: '<span class="text-[11px] font-semibold uppercase tracking-wider text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-2.5 py-0.5">Siguiente</span>'
+            },
+            pendiente: {
+                caja: 'bg-ink-900 border-dashed border-slate-600', icono: 'text-slate-500', borde: 'border-slate-800', titulo: 'text-slate-300', hash: '',
+                chip: '<span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 border border-slate-700 rounded-full px-2.5 py-0.5">Pendiente</span>'
+            }
+        };
+
         async function pintarCadena() {
             const ol = document.getElementById('cadena');
             let previo = '0'.repeat(64);
             for (let i = 0; i < fases.length; i++) {
                 const f = fases[i];
+                const e = ESTILO[f.estado];
                 const hash = await sha256(previo + f.n + f.titulo + f.estado);
-                const enCurso = f.estado === 'curso';
                 const li = document.createElement('li');
                 li.className = 'relative pl-[72px]';
-                const progreso = enCurso ? Math.round(f.hecho.length / (f.hecho.length + f.falta.length) * 100) : 0;
                 li.innerHTML = `
-                    ${i < fases.length - 1 ? `<span class="bloque-enlace ${enCurso ? 'hecho' : ''}"></span>` : ''}
-                    <span class="absolute left-0 top-0 w-14 h-14 rounded-xl flex items-center justify-center border ${enCurso ? 'bg-cyan-500/15 border-cyan-400/60 latido' : 'bg-ink-900 border-dashed border-slate-600'}">
-                        <i data-lucide="${f.icono}" class="w-6 h-6 ${enCurso ? 'text-cyan-300' : 'text-slate-500'}"></i>
+                    ${i < fases.length - 1 ? `<span class="bloque-enlace ${f.estado === 'hecho' ? 'hecho' : ''}"></span>` : ''}
+                    <span class="absolute left-0 top-0 w-14 h-14 rounded-xl flex items-center justify-center border ${e.caja}">
+                        <i data-lucide="${f.icono}" class="w-6 h-6 ${e.icono}"></i>
                     </span>
-                    <div class="vidrio rounded-2xl border ${enCurso ? 'border-cyan-500/40' : 'border-slate-800'} p-5 md:p-6">
+                    <div class="vidrio rounded-2xl border ${e.borde} p-5 md:p-6">
                         <div class="flex flex-wrap items-center gap-3 mb-2">
                             <span class="font-mono text-xs text-slate-500">BLOQUE ${f.n}</span>
-                            ${enCurso
-                                ? '<span class="text-[11px] font-semibold uppercase tracking-wider text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-2.5 py-0.5">En curso</span>'
-                                : '<span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 border border-slate-700 rounded-full px-2.5 py-0.5">Pendiente</span>'}
+                            ${e.chip}
+                            ${f.fecha ? `<span class="font-mono text-[11px] text-slate-500">${f.fecha}</span>` : ''}
                         </div>
-                        <h3 class="text-lg md:text-xl font-semibold ${enCurso ? 'text-white' : 'text-slate-300'}">${f.titulo}</h3>
+                        <h3 class="text-lg md:text-xl font-semibold ${e.titulo}">${f.titulo}</h3>
                         <p class="text-sm text-slate-400 mt-2">${f.resumen}</p>
-                        ${enCurso ? `
-                            <div class="mt-5">
-                                <div class="flex justify-between text-xs mb-1.5"><span class="text-slate-400">${f.hecho.length} de ${f.hecho.length + f.falta.length} tareas</span><span class="font-mono text-cyan-300">${progreso} %</span></div>
-                                <div class="relative h-2 rounded-full bg-slate-800 overflow-hidden barrido"><span class="block h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-400" style="width:${progreso}%"></span></div>
-                                <div class="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 mt-4 text-sm">
-                                    ${f.hecho.map(t => `<span class="flex items-center gap-2 text-slate-300"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i>${t}</span>`).join('')}
-                                    ${f.falta.map(t => `<span class="flex items-center gap-2 text-slate-500"><i data-lucide="circle-dashed" class="w-4 h-4 shrink-0"></i>${t}</span>`).join('')}
-                                </div>
-                                <a href="#fase1" class="inline-flex items-center gap-1.5 mt-5 text-sm text-cyan-300 hover:text-cyan-200">Ver cómo se ha hecho <i data-lucide="arrow-down" class="w-4 h-4"></i></a>
-                            </div>` : ''}
+                        ${f.enlace ? `<a href="${f.enlace}" class="inline-flex items-center gap-1.5 mt-3 text-sm text-cyan-300 hover:text-cyan-200">Ver detalle <i data-lucide="arrow-down" class="w-4 h-4"></i></a>` : ''}
                         <div class="mt-4 pt-3 border-t border-slate-800/80 font-mono text-[10px] sm:text-[11px] text-slate-500 space-y-0.5 break-all">
                             <div><span class="text-slate-600">prev&nbsp;</span>${previo.slice(0, 24)}…</div>
-                            <div><span class="text-slate-600">hash&nbsp;</span><span class="${enCurso ? 'text-cyan-400/80' : ''}">${hash ? hash.slice(0, 24) + '…' : 'no disponible en este navegador'}</span></div>
+                            <div><span class="text-slate-600">hash&nbsp;</span><span class="${e.hash}">${hash ? hash.slice(0, 24) + '…' : 'no disponible en este navegador'}</span></div>
                         </div>
                     </div>`;
                 ol.appendChild(li);
