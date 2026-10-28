@@ -402,14 +402,13 @@ python score.py --data-dir data/raw                  # calcula y guarda la sever
 
 ## 13. Próximos pasos
 
-Hechos: esquema de PostgreSQL y carga idempotente, ingesta programada, modelo A desplegado y fórmula de severidad (sección 14). Quedan:
+Hechos: esquema de PostgreSQL y carga idempotente, ingesta programada, modelo A desplegado y fórmula de severidad (sección 14). También la integración con la plataforma (octubre de 2026): los microservicios Java exponen la base de datos y el score, y las aportaciones de las organizaciones quedan registradas en Hyperledger Fabric (ver el informe de planificación, sección 16). Quedan:
 
-1. Integrar la base de datos y el score con los microservicios Java (consulta y API) y con Hyperledger Fabric (hash canónico y procedencia de cada indicador).
-2. Revisar la distribución de la severidad con unos días de ingesta y justificar los pesos en la memoria.
-3. Reentrenar el modelo A periódicamente con la base de datos y activar una versión nueva solo si su PR-AUC temporal no empeora.
-4. Revisar periódicamente la lista de doble uso con los datos nuevos (candidatos: `upload.cc`, `replit.dev`, `trycloudflare.com`, `wasmer.app`, `backblazeb2.com`).
-5. Repetir la validación con VirusTotal cuando cambie el conjunto de fuentes o pasen meses; si hace falta, ampliarla a md5, sha1 y a las IPs de ThreatFox y TweetFeed.
-6. Reconsiderar una fuente descartada solo si aparece un hueco medible (sección 10).
+1. Revisar la distribución de la severidad con unos días de ingesta y justificar los pesos en la memoria.
+2. Reentrenar el modelo A periódicamente con la base de datos y activar una versión nueva solo si su PR-AUC temporal no empeora.
+3. Revisar periódicamente la lista de doble uso con los datos nuevos (candidatos: `upload.cc`, `replit.dev`, `trycloudflare.com`, `wasmer.app`, `backblazeb2.com`).
+4. Repetir la validación con VirusTotal cuando cambie el conjunto de fuentes o pasen meses; si hace falta, ampliarla a md5, sha1 y a las IPs de ThreatFox y TweetFeed.
+5. Reconsiderar una fuente descartada solo si aparece un hueco medible (sección 10).
 
 ## 14. De los datos a la plataforma: base de datos, ingesta, modelo y severidad
 

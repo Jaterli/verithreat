@@ -13,6 +13,7 @@ import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import com.verithreat.ioc.api.Dtos.FabricRecord;
 import com.verithreat.ioc.api.Dtos.IndicatorRow;
 import com.verithreat.ioc.api.Dtos.Score;
 import com.verithreat.ioc.api.Dtos.ScorePoint;
@@ -84,16 +85,24 @@ public class IndicatorRepository {
     }
 
     public List<Sighting> sightings(long indicatorId, int limit) {
-        return jdbc.sql("SELECT source, category, seen_at, last_confirmed_at, status, malware_family, confidence, "
-                        + "reporter, corroborated FROM sighting WHERE indicator_id = :id "
-                        + "ORDER BY last_confirmed_at DESC, id DESC LIMIT :limit")
+        return jdbc.sql("SELECT s.source, s.category, s.seen_at, s.last_confirmed_at, s.status, s.malware_family, "
+                        + "s.confidence, s.reporter, s.corroborated, f.status AS f_status, f.canonical_hash, f.tx_id, "
+                        + "f.msp_id, f.registered_at, f.attempts "
+                        + "FROM sighting s LEFT JOIN fabric_registration f ON f.sighting_id = s.id "
+                        + "WHERE s.indicator_id = :id ORDER BY s.last_confirmed_at DESC, s.id DESC LIMIT :limit")
                 .param("id", indicatorId).param("limit", limit)
                 .query((rs, n) -> new Sighting(rs.getString("source"), rs.getString("category"),
                         rs.getObject("seen_at", OffsetDateTime.class), rs.getObject("last_confirmed_at", OffsetDateTime.class),
                         rs.getString("status"), rs.getString("malware_family"),
                         (Integer) rs.getObject("confidence", Integer.class), rs.getString("reporter"),
-                        (Boolean) rs.getObject("corroborated", Boolean.class)))
+                        (Boolean) rs.getObject("corroborated", Boolean.class), fabricRecord(rs)))
                 .list();
+    }
+
+    private static FabricRecord fabricRecord(ResultSet rs) throws SQLException {
+        String status = rs.getString("f_status");
+        return status == null ? null : new FabricRecord(status, rs.getString("canonical_hash"), rs.getString("tx_id"),
+                rs.getString("msp_id"), rs.getObject("registered_at", OffsetDateTime.class), rs.getInt("attempts"));
     }
 
     public List<ScorePoint> scoreHistory(long indicatorId, int limit) {

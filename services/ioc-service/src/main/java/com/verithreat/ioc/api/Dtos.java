@@ -39,9 +39,18 @@ public final class Dtos {
     public record Page<T>(List<T> items, int page, int size, boolean hasNext) {
     }
 
+    /** Observación. {@code fabric} solo existe en las aportaciones de organizaciones (los feeds no van a Fabric). */
     public record Sighting(String source, String category, OffsetDateTime seenAt, OffsetDateTime lastConfirmedAt,
                            String status, String malwareFamily, Integer confidence, String reporter,
-                           Boolean corroborated) {
+                           Boolean corroborated, FabricRecord fabric) {
+    }
+
+    /**
+     * Registro de una aportación en Fabric: {@code status} = pending, registered o failed. Con el hash canónico y el
+     * identificador de la transacción, cualquier organización del canal puede comprobarlo en la cadena.
+     */
+    public record FabricRecord(String status, String canonicalHash, String txId, String mspId,
+                               OffsetDateTime registeredAt, int attempts) {
     }
 
     public record ScorePoint(OffsetDateTime computedAt, int severity, boolean disputed) {
@@ -64,9 +73,10 @@ public final class Dtos {
 
     /**
      * Resultado de una aportación. {@code created} = la organización no la había aportado antes (si ya lo había hecho,
-     * se renueva su última confirmación). La severidad la calcula score.py en la siguiente ejecución horaria.
+     * se renueva su última confirmación). La severidad la calcula score.py en la siguiente ejecución horaria;
+     * {@code fabricStatus} es el estado de su registro en Fabric (pending hasta que el worker lo envía).
      */
     public record SightingResponse(long indicatorId, long sightingId, String type, String value, String fingerprint,
-                                   boolean created, String severityStatus, Score currentScore) {
+                                   boolean created, String severityStatus, String fabricStatus, Score currentScore) {
     }
 }

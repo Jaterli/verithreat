@@ -22,7 +22,8 @@ Criterio de éxito clave: el score de riesgo debe ser **coherente y explicable**
 guarda por separado y se conoce la fiabilidad de cada fuente.
 
 **La carpeta `ai/` cubre los datos, la ingesta, el modelo y la severidad** (hechos y en ejecución horaria), y `db/`
-la base de datos. Los microservicios Java, Fabric y el dashboard son el paso 6 y siguientes, y aún no están hechos.
+la base de datos. Los microservicios Java (`services/`) y el registro en Fabric (`blockchain/`) son el paso 6, hecho
+el 28-10-2026; falta el dashboard.
 
 ## 2. Estructura y archivos
 
@@ -52,9 +53,11 @@ verithreat/ai/
   data/raw/                      CSV de las fuentes (NO se versionan)
   tests/test_normalization.py    normalize_value (loaders.py) contra db/normalization_cases.json
 verithreat/db/schema.sql         esquema PostgreSQL (se aplica solo al crear el contenedor)
-verithreat/db/migrations/        cambios posteriores numerados (002_organizations.sql); en una base existente, con psql
+verithreat/db/migrations/        cambios posteriores numerados (002 organizaciones, 003 claves de API, 004 bandeja de
+                                 salida de Fabric); en una base existente, con psql
 verithreat/db/normalization_cases.json   casos compartidos de normalización (Python y Java deben dar lo mismo)
-verithreat/services/ioc-service/ Spring Boot 4.0.9 (Java 17, Maven): API de consulta y aportaciones (paso 6a)
+verithreat/services/ioc-service/ Spring Boot 4.0.9 (Java 17, Maven): API de consulta y aportaciones (paso 6a);
+                                 paquete fabric/: bandeja de salida y cliente Fabric Gateway 1.13.0 (paso 6d)
 verithreat/services/gateway/     Spring Cloud Gateway Server MVC 5.0 (Spring Cloud 2025.1.4): claves de API por
                                  organización (paso 6b); scripts/new-api-key.sh crea una clave y la muestra una vez
 verithreat/blockchain/network.sh red Fabric de prueba: up | deploy | smoke | down (usa ~/fabric/fabric-samples)
@@ -189,6 +192,11 @@ Las exportaciones `recent` cubren pocos días y se regeneran cada pocos minutos.
       Los feeds públicos ya tienen su procedencia en `source`/`download`, son ~100.000 cambios al día y sus términos
       no autorizan redistribuirlos.
     - **Orden del paso 6:** API Java → Gateway → red Fabric y chaincode → conectar las aportaciones con Fabric.
+    - **Aportaciones → Fabric con bandeja de salida** (28-10-2026): `ioc-service` anota cada aportación nueva en
+      `fabric_registration` en la misma transacción que la observación, y un proceso del propio servicio la envía
+      después. La aportación nunca espera ni falla porque Fabric esté caído. **Simplificación del TFM:** el servicio
+      guarda el certificado y la clave de cada organización y firma en su nombre. En un despliegue real cada
+      organización firmaría con su propia clave (cliente propio o HSM), y la plataforma no podría suplantarla.
 
 ## 5. Cifras de referencia
 
@@ -298,6 +306,10 @@ mvn test                                         # unitarios + integración con 
 mvn -DskipTests package && java -jar target/ioc-service-0.1.0.jar   # http://127.0.0.1:8081/swagger-ui.html
 #   GET  /api/v1/indicators/lookup?type=domain&value=evil.com   GET /api/v1/indicators?category=&type=&minSeverity=
 #   GET  /api/v1/indicators/{id}                                POST /api/v1/sightings  (cabecera X-Organization)
+# Registro en Fabric: activo por defecto (FABRIC_ENABLED=false lo apaga; lo pendiente se envía al reactivarlo). Lee las
+# identidades User1 de ~/fabric/fabric-samples/test-network (FABRIC_TEST_NETWORK para otra ruta). Estado por aportación:
+#   SELECT status, attempts, last_error FROM verithreat.fabric_registration;   (pending | registered | failed)
+# Un 'failed' (rechazo del chaincode) se reintenta a mano: UPDATE ... SET status = 'pending', next_attempt_at = now()
 
 # Gateway (en WSL, desde services/gateway; GATEWAY_TOKEN en .env, el mismo para los dos servicios):
 mvn -DskipTests package && java -jar target/gateway-0.1.0.jar        # http://127.0.0.1:8080/api/...
@@ -334,6 +346,8 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
 - Que los hashes de TweetFeed con 0 detecciones sean artefactos benignos y no malware sin detectar.
 - La consulta DNS por IPv6 de blocklist.de: su documentación solo describe IPv4 (confirmado), así que esas IPs quedan
   `IPV6_UNSUPPORTED`; no se sabe si el servicio la admite de forma no documentada.
+- Que todo error del chaincode llegue con el texto `chaincode response 500` (así lo da Fabric 2.5.16 en la prueba real;
+  el worker lo usa para no reintentar). Si otra versión cambia el mensaje, esos rechazos se reintentarían sin fin.
 
 ## 8. Reglas de trabajo
 
@@ -400,9 +414,19 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
    fija los anchor peers editando el JSON con Python (necesarios para el descubrimiento del SDK). Prueba: registro
    desde las dos organizaciones, consulta con ambos y rechazo de una huella no válida al avalar.
    **La red no sobrevive a un reinicio de Docker**: `network.sh down && network.sh up && network.sh deploy` la recrea
-   vacía); (d) registrar en Fabric
-   cada IOC aportado (hash canónico: tipo + valor normalizado + organización + timestamp). Entorno en WSL: Java 17,
-   Maven, Docker y Node instalados; faltan los binarios de Fabric (Go no hace falta con chaincode en Java).
+   vacía); (d) ~~registrar en Fabric cada IOC aportado~~ (hecho el 28-10-2026, decisión 14: migración 004
+   `fabric_registration`, una fila por aportación **nueva** (repetirla no la registra otra vez) con estado
+   `pending`/`registered`/`failed`, intentos, último error, hash canónico, `tx_id`, MSP y fecha. Worker `@Scheduled`
+   cada 5 s, tandas de 20, `FOR UPDATE SKIP LOCKED`; antes de registrar consulta `GetRecordsByIndicator` y adopta el
+   registro si su organización ya lo tiene en la cadena (sin duplicados si la anotación en la base falló tras
+   confirmar). Errores: rechazo del chaincode (`chaincode response 500`) = `failed`; lo demás se reintenta con espera
+   10 s × 2ⁿ hasta 30 min y corta la tanda. `POST /sightings` devuelve `fabricStatus`; el detalle muestra `fabric` en
+   cada aportación. fabric-protos necesita **protobuf 4** (se importa `protobuf-bom` 4.36.2; sin él gana el 3.25 de
+   grpc y falla al conectar). 5 tests nuevos (Fabric simulado) + prueba real: dos organizaciones registradas, la API y
+   la cadena coinciden en hash, `txId` y MSP; un tipo no válido queda `failed` con el mensaje del peer. La fecha de
+   la base de datos tiene microsegundos y la de la cadena nanosegundos: para comprobar un registro se usa el hash
+   canónico (`GetRecord`), no se recalcula. Si la red se recrea vacía, los `registered` de la base ya no están en la
+   cadena (solo red de prueba)).
 7. Mantenimiento: revisar `DUAL_USE` (candidatos vistos: `upload.cc`, `replit.dev`, `trycloudflare.com`,
    `wasmer.app`, `backblazeb2.com`); repetir la validación con
    VirusTotal cuando cambie el conjunto de fuentes o pasen meses.

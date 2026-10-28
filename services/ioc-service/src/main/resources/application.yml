@@ -30,3 +30,31 @@ verithreat:
   # Secreto compartido con el Gateway (GATEWAY_TOKEN en .env): sin él, /api/** devuelve 401. Vacío = no se exige
   # (solo para desarrollo; el servicio lo avisa al arrancar).
   gateway-token: ${GATEWAY_TOKEN:}
+  # Registro en Fabric de las aportaciones (paso 6d; red de blockchain/network.sh). Con enabled = false las
+  # aportaciones se quedan 'pending' en la tabla fabric_registration y se envían al activarlo.
+  fabric:
+    enabled: ${FABRIC_ENABLED:true}
+    channel: iocchannel
+    chaincode: iocregistry
+    poll-interval: 5s
+    batch-size: 20
+    retry-base: 10s
+    retry-max: 30m
+    # test-network de fabric-samples (en WSL; se recrea con certificados nuevos en cada `network.sh up`)
+    test-network: ${FABRIC_TEST_NETWORK:${user.home}/fabric/fabric-samples/test-network}
+    # Simplificación del TFM: el servicio firma con la identidad User1 de cada organización (ver FabricProperties)
+    organizations:
+      org-alpha:
+        msp-id: Org1MSP
+        certificate: ${verithreat.fabric.test-network}/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem
+        private-key: ${verithreat.fabric.test-network}/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore
+        peer-endpoint: localhost:7051
+        peer-host-override: peer0.org1.example.com
+        tls-ca-certificate: ${verithreat.fabric.test-network}/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      org-beta:
+        msp-id: Org2MSP
+        certificate: ${verithreat.fabric.test-network}/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/msp/signcerts/User1@org2.example.com-cert.pem
+        private-key: ${verithreat.fabric.test-network}/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/msp/keystore
+        peer-endpoint: localhost:9051
+        peer-host-override: peer0.org2.example.com
+        tls-ca-certificate: ${verithreat.fabric.test-network}/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem

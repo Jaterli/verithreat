@@ -20,6 +20,7 @@ services:
       - ./db/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
       - ./db/migrations/002_organizations.sql:/docker-entrypoint-initdb.d/002_organizations.sql:ro
       - ./db/migrations/003_api_keys.sql:/docker-entrypoint-initdb.d/003_api_keys.sql:ro
+      - ./db/migrations/004_fabric_registration.sql:/docker-entrypoint-initdb.d/004_fabric_registration.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U verithreat -d verithreat"]
       interval: 5s

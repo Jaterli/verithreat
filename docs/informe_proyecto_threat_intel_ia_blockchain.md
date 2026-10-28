@@ -98,8 +98,8 @@ El motor Python y los microservicios Java no se llaman entre sí: comparten la b
 
 ### 6.3 Blockchain
 - **Hyperledger Fabric** — red blockchain permisionada (no pública, sin criptomonedas ni gas).
-- **Chaincode (Go o Java)** — lógica de negocio para registrar el hash y metadatos de cada IOC que aporta una organización (los feeds públicos ya conservan su procedencia en la base de datos).
-- **Fabric SDK for Java** — integración desde los microservicios hacia la red blockchain.
+- **Chaincode (Java)** — lógica de negocio para registrar el hash y metadatos de cada IOC que aporta una organización (los feeds públicos ya conservan su procedencia en la base de datos).
+- **Fabric Gateway SDK para Java** — integración desde los microservicios hacia la red blockchain (sustituye al antiguo Fabric SDK for Java, obsoleto desde Fabric 2.4).
 
 ### 6.4 Frontend
 - **React** — dashboard para analistas.
@@ -153,7 +153,7 @@ Como punto de partida para el diseño de la base de datos y el chaincode:
 - `fuente` — organización o feed que lo reportó
 - `severidad` — score de 0 a 100 calculado por reglas de fiabilidad de las fuentes y el modelo de IA, con cada componente guardado por separado
 - `timestamp` — fecha de detección/reporte
-- `hash_blockchain` — referencia al registro inmutable correspondiente (solo en los IOCs que aporta una organización)
+- `hash_blockchain` — referencia al registro inmutable correspondiente (solo en los IOCs que aporta una organización; implementado como hash canónico e identificador de la transacción en la tabla `fabric_registration`)
 - `estado` — activo, resuelto, falso positivo
 
 ---
@@ -232,6 +232,12 @@ El proyecto se apoya en tendencias que el propio sector está señalando de cara
 1. **La ingesta y el scoring se quedan en Python; Java expone la plataforma.** El planteamiento inicial asignaba a los microservicios Java la ingesta, la normalización y el scoring. Durante la fase de datos esas funciones se construyeron en Python, se validaron y quedaron en ejecución horaria. Reescribirlas en Java duplicaría código ya probado y abriría la puerta a dos versiones que se contradigan. Por eso los microservicios Java se centran en lo que es propio de una plataforma de intercambio: la API de consulta, la recepción de los IOCs que aportan las organizaciones, la autenticación de cada organización y el registro en blockchain. Ambos lados se comunican a través de PostgreSQL.
 2. **En la blockchain se registran solo los IOCs que aportan las organizaciones.** Es la procedencia que hay que garantizar. Los feeds públicos ya conservan su fuente y cada descarga en la base de datos; registrarlos supondría miles de transacciones por hora en una red de prueba y sus términos de uso no autorizan expresamente redistribuirlos.
 3. **Orden: primero los microservicios Java, después Hyperledger Fabric.** Se construye sobre la base de datos que ya funciona y cada pieza se prueba por separado antes de unirlas.
+
+**28 de octubre de 2026 — cómo se registra una aportación en blockchain.**
+
+1. **En la cadena va la huella del IOC, no el IOC.** El chaincode guarda el sha256 del valor normalizado, el tipo, la categoría, la organización (tomada del certificado que firma, nunca de un parámetro) y la fecha de la transacción, y calcula con ellos un hash canónico. Quien tenga el IOC puede comprobar quién lo aportó y cuándo, pero la cadena no expone los indicadores.
+2. **La aportación no espera a la blockchain (bandeja de salida).** El servicio de IOCs anota cada aportación nueva en una tabla de pendientes dentro de la misma transacción de base de datos, y un proceso del propio servicio la envía a Fabric después, con reintentos. Así una aportación nunca se pierde ni falla porque la red esté caída, y antes de registrar se comprueba si ya está en la cadena para no duplicarla.
+3. **Simplificación: el servicio firma en nombre de cada organización.** En la red de prueba, el servicio guarda el certificado y la clave privada de cada organización. Es suficiente para demostrar el flujo, pero no protege frente a un operador de la plataforma malintencionado: podría firmar como cualquier organización. En un despliegue real cada organización firmaría con su propia clave (cliente propio o HSM) y la plataforma solo reenviaría transacciones ya firmadas. Se presenta como limitación y trabajo futuro.
 
 **Octubre de 2026 — fuentes y modelo.** El conjunto de fuentes y los rasgos del modelo cambiaron respecto a las secciones 6.2 y 8 originales: ver la nota de la sección 8 y el documento de la fase de datos.
 

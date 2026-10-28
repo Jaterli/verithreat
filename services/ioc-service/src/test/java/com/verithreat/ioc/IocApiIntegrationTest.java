@@ -1,5 +1,6 @@
 package com.verithreat.ioc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,7 +27,8 @@ import org.testcontainers.utility.MountableFile;
  * La API de principio a fin contra un PostgreSQL real con el esquema y las migraciones del repositorio (db/), tal
  * como los aplica docker-compose.yml.
  */
-@SpringBootTest(properties = "verithreat.gateway-token=") // la API sin Gateway; el filtro tiene su propio test
+// La API sin Gateway ni Fabric; el filtro y el worker de Fabric tienen sus propios tests
+@SpringBootTest(properties = {"verithreat.gateway-token=", "verithreat.fabric.enabled=false"})
 @AutoConfigureMockMvc
 @Testcontainers
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -38,7 +40,9 @@ class IocApiIntegrationTest {
             .withCopyFileToContainer(MountableFile.forHostPath("../../db/schema.sql"),
                     "/docker-entrypoint-initdb.d/001_schema.sql")
             .withCopyFileToContainer(MountableFile.forHostPath("../../db/migrations/002_organizations.sql"),
-                    "/docker-entrypoint-initdb.d/002_organizations.sql");
+                    "/docker-entrypoint-initdb.d/002_organizations.sql")
+            .withCopyFileToContainer(MountableFile.forHostPath("../../db/migrations/004_fabric_registration.sql"),
+                    "/docker-entrypoint-initdb.d/004_fabric_registration.sql");
 
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry r) {
@@ -90,7 +94,8 @@ class IocApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.value").value("evil-test.com"))
                 .andExpect(jsonPath("$.created").value(true))
-                .andExpect(jsonPath("$.severityStatus").value("pending"));
+                .andExpect(jsonPath("$.severityStatus").value("pending"))
+                .andExpect(jsonPath("$.fabricStatus").value("pending"));
         mvc.perform(post("/api/v1/sightings").header("X-Organization", "org-alpha")
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isOk())
@@ -98,6 +103,11 @@ class IocApiIntegrationTest {
         mvc.perform(post("/api/v1/sightings").header("X-Organization", "org-beta")
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isCreated());
+        // Una entrada en la bandeja de salida por aportación nueva, no por repetición
+        int outbox = jdbc.sql("SELECT count(*) FROM fabric_registration WHERE indicator_type = 'domain' "
+                        + "AND status = 'pending' AND indicator_fingerprint = encode(fingerprint('evil-test.com'), 'hex')")
+                .query(Integer.class).single();
+        assertEquals(2, outbox);
     }
 
     @Test
@@ -135,6 +145,7 @@ class IocApiIntegrationTest {
         mvc.perform(get("/api/v1/indicators/" + id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sightings.length()").value(2))
+                .andExpect(jsonPath("$.sightings[0].fabric.status").value("pending"))
                 .andExpect(jsonPath("$.scoreHistory[0].severity").value(75));
         mvc.perform(get("/api/v1/indicators").param("type", "nonsense"))
                 .andExpect(status().isBadRequest());

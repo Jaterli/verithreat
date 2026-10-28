@@ -104,8 +104,21 @@ public class SightingService {
                 .query((rs, n) -> new Row(rs.getLong("id"), rs.getBoolean("inserted")))
                 .single();
 
+        // Bandeja de salida (paso 6d): en la misma transacción, así no hay aportación sin registro ni registro sin
+        // aportación. Solo la primera vez: volver a aportar el mismo IOC no es una aportación nueva.
+        if (row.inserted()) {
+            jdbc.sql("""
+                            INSERT INTO fabric_registration (sighting_id, organization, indicator_type,
+                                                             indicator_fingerprint, category)
+                            VALUES (:sighting, :org, :type, :fp, :category)""")
+                    .param("sighting", row.id()).param("org", organization).param("type", ind.type())
+                    .param("fp", ind.fingerprint()).param("category", req.category()).update();
+        }
+        String fabricStatus = jdbc.sql("SELECT status FROM fabric_registration WHERE sighting_id = :id")
+                .param("id", row.id()).query(String.class).optional().orElse(null);
+
         var score = indicators.currentScore(ind.id()).orElse(null);
         return new SightingResponse(ind.id(), row.id(), ind.type(), ind.value(), ind.fingerprint(), row.inserted(),
-                "pending", score);
+                "pending", fabricStatus, score);
     }
 }
