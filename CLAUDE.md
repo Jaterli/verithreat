@@ -23,7 +23,7 @@ guarda por separado y se conoce la fiabilidad de cada fuente.
 
 **La carpeta `ai/` cubre los datos, la ingesta, el modelo y la severidad** (hechos y en ejecución horaria), y `db/`
 la base de datos. Los microservicios Java (`services/`) y el registro en Fabric (`blockchain/`) son el paso 6, hecho
-el 28-10-2026; falta el dashboard.
+el 28-10-2026; el dashboard (`dashboard/`, paso 7) está en curso.
 
 ## 2. Estructura y archivos
 
@@ -60,6 +60,8 @@ verithreat/services/ioc-service/ Spring Boot 4.0.9 (Java 17, Maven): API de cons
                                  paquete fabric/: bandeja de salida y cliente Fabric Gateway 1.13.0 (paso 6d)
 verithreat/services/gateway/     Spring Cloud Gateway Server MVC 5.0 (Spring Cloud 2025.1.4): claves de API por
                                  organización (paso 6b); scripts/new-api-key.sh crea una clave y la muestra una vez
+verithreat/dashboard/            React 19 + Vite 7 + Recharts 3 + Tailwind 4 (TypeScript); el proxy de Vite añade la clave
+                                 de API (dashboard/.env.local, sin prefijo VITE_) hacia el Gateway: el navegador no la ve
 verithreat/blockchain/network.sh red Fabric de prueba: up | deploy | smoke | down (usa ~/fabric/fabric-samples)
 verithreat/blockchain/chaincode/iocregistry/   chaincode Java 11 (Maven, fabric-chaincode-shim 2.5.11): RegisterIoc,
                                  GetRecord, GetRecordsByIndicator
@@ -306,6 +308,7 @@ mvn test                                         # unitarios + integración con 
 mvn -DskipTests package && java -jar target/ioc-service-0.1.0.jar   # http://127.0.0.1:8081/swagger-ui.html
 #   GET  /api/v1/indicators/lookup?type=domain&value=evil.com   GET /api/v1/indicators?category=&type=&minSeverity=
 #   GET  /api/v1/indicators/{id}                                POST /api/v1/sightings  (cabecera X-Organization)
+#   GET  /api/v1/stats  (panel general; ~0,9 s con la base real: recorre todo `score` para quedarse con la última)
 # Registro en Fabric: activo por defecto (FABRIC_ENABLED=false lo apaga; lo pendiente se envía al reactivarlo). Lee las
 # identidades User1 de ~/fabric/fabric-samples/test-network (FABRIC_TEST_NETWORK para otra ruta). Estado por aportación:
 #   SELECT status, attempts, last_error FROM verithreat.fabric_registration;   (pending | registered | failed)
@@ -315,6 +318,12 @@ mvn -DskipTests package && java -jar target/ioc-service-0.1.0.jar   # http://127
 mvn -DskipTests package && java -jar target/gateway-0.1.0.jar        # http://127.0.0.1:8080/api/...
 sh scripts/new-api-key.sh org-alpha "descripción"                    # clave nueva, se muestra una vez
 #   curl -H "X-API-Key: vt_..." "http://127.0.0.1:8080/api/v1/indicators/lookup?type=domain&value=evil.com"
+
+# Dashboard (en WSL, Node 22; necesita el Gateway y ioc-service en marcha). La clave va directa al fichero:
+sh services/gateway/scripts/new-api-key.sh org-alpha "dashboard (dev)" | tail -1 | sed 's/^/VERITHREAT_API_KEY=/' > dashboard/.env.local
+cd dashboard && npm install && npm run dev                           # http://127.0.0.1:5173
+#   Lanzado en segundo plano desde PowerShell: setsid nohup npm run dev < /dev/null &  (si no, muere al cerrar wsl.exe)
+#   npm run typecheck   |   npm run build  (dist/, no se versiona)
 
 # Histórico de blocklist.de (opcional, fuera de la ingesta; --dns necesita dnspython):
 python blocklist_history.py --verify 200 --verify-only --seed 7
@@ -427,7 +436,16 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
    la base de datos tiene microsegundos y la de la cadena nanosegundos: para comprobar un registro se usa el hash
    canónico (`GetRecord`), no se recalcula. Si la red se recrea vacía, los `registered` de la base ya no están en la
    cadena (solo red de prueba)).
-7. Mantenimiento: revisar `DUAL_USE` (candidatos vistos: `upload.cc`, `replit.dev`, `trycloudflare.com`,
+7. **Dashboard React** (bloque 06 del roadmap), en este orden: (a) ~~`GET /api/v1/stats`~~ (hecho el 29-10-2026:
+   una sola pasada por `score` agrupada por tipo, categoría y severidad; mediana y p90 exactos, como
+   `percentile_disc`, histograma por categoría en tramos de 10, frescura de cada fuente, estado de Fabric por
+   organización y modelo activo; 1 test nuevo, 15 en total); (b) ~~esqueleto y panel general~~ (hecho el 29-10-2026,
+   `dashboard/`: proxy de Vite con la clave de `org-alpha` «dashboard (dev)»; el dashboard actúa como esa
+   organización. Interfaz en español; enrutado por hash sin dependencias; paleta de referencia de visualización con
+   tema claro y oscuro; probado de principio a fin con la base real y capturas en los dos temas); (c) indicadores:
+   búsqueda, listado filtrado y detalle con la severidad explicada término a término; (d) formulario de aportación.
+   Fuera por complejidad: login de analistas y despliegue de producción (el proxy solo existe en desarrollo).
+8. Mantenimiento: revisar `DUAL_USE` (candidatos vistos: `upload.cc`, `replit.dev`, `trycloudflare.com`,
    `wasmer.app`, `backblazeb2.com`); repetir la validación con
    VirusTotal cuando cambie el conjunto de fuentes o pasen meses.
 

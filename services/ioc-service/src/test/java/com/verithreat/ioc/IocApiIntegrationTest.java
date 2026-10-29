@@ -150,4 +150,30 @@ class IocApiIntegrationTest {
         mvc.perform(get("/api/v1/indicators").param("type", "nonsense"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @Order(6)
+    void statsSummarizeScoresSourcesAndFabric() throws Exception {
+        long id = jdbc.sql("SELECT id FROM indicator WHERE type = 'domain' AND value = 'evil-test.com'")
+                .query(Long.class).single();
+        // Una puntuación más reciente: cuenta la última, no el historial
+        jdbc.sql("INSERT INTO score (indicator_id, computed_at, components, severity, disputed) "
+                        + "VALUES (:id, now() + interval '1 minute', CAST(:c AS jsonb), 92, true)")
+                .param("id", id).param("c", "{\"category\": \"phishing\"}").update();
+
+        mvc.perform(get("/api/v1/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.indicators").value(1))
+                .andExpect(jsonPath("$.scored").value(1))
+                .andExpect(jsonPath("$.disputed").value(1))
+                .andExpect(jsonPath("$.byTypeAndCategory[0].type").value("domain"))
+                .andExpect(jsonPath("$.byTypeAndCategory[0].category").value("phishing"))
+                .andExpect(jsonPath("$.byTypeAndCategory[0].medianSeverity").value(92))
+                .andExpect(jsonPath("$.severityHistogram.length()").value(10))
+                .andExpect(jsonPath("$.severityHistogram[9].from").value(90))
+                .andExpect(jsonPath("$.severityHistogram[9].count").value(1))
+                .andExpect(jsonPath("$.sources[?(@.code == 'org-alpha')].sightings").value(1))
+                .andExpect(jsonPath("$.fabric[?(@.organization == 'org-beta')].pending").value(1))
+                .andExpect(jsonPath("$.model").isEmpty());
+    }
 }

@@ -79,4 +79,39 @@ public final class Dtos {
     public record SightingResponse(long indicatorId, long sightingId, String type, String value, String fingerprint,
                                    boolean created, String severityStatus, String fabricStatus, Score currentScore) {
     }
+
+    /**
+     * Panel general (GET /api/v1/stats). Las severidades son la última puntuación de cada indicador y solo se comparan
+     * dentro de una categoría, por eso el histograma va por categoría.
+     */
+    public record Stats(OffsetDateTime generatedAt, long indicators, long scored, long disputed,
+                        List<GroupStats> byTypeAndCategory, List<HistogramBin> severityHistogram,
+                        List<SourceStats> sources, List<FabricStats> fabric, ModelInfo model) {
+    }
+
+    /** Severidad de un tipo dentro de una categoría: mediana y p90 exactos (como percentile_disc). */
+    public record GroupStats(String type, String category, long count, long disputed, int medianSeverity,
+                             int p90Severity) {
+    }
+
+    /** Tramo del histograma: severidades de {@code from} a {@code from + 9} (el último, de 90 a 100). */
+    public record HistogramBin(String category, int from, long count) {
+    }
+
+    /**
+     * Frescura de cada fuente. {@code lastFetchedAt} = última descarga (null en las organizaciones, que no descargan);
+     * {@code activeLast48h} = observaciones confirmadas en las últimas 48 h.
+     */
+    public record SourceStats(String code, String family, String role, OffsetDateTime lastFetchedAt, long sightings,
+                              long activeLast48h, OffsetDateTime lastConfirmedAt) {
+    }
+
+    /** Estado del registro en Fabric de las aportaciones de una organización. */
+    public record FabricStats(String organization, long pending, long registered, long failed) {
+    }
+
+    /** Versión activa del modelo A con sus métricas de la evaluación temporal (null si no hay ninguna activa). */
+    public record ModelInfo(String name, String version, OffsetDateTime trainedAt, Double temporalPrAuc,
+                            Double temporalRocAuc) {
+    }
 }

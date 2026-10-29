@@ -17,6 +17,7 @@ sketch
 ### secretos ###
 .env
 .env.*
+!.env.example
 
 ### datos (no se versionan: CLAUDE.md, regla 1) ###
 # Fuentes descargadas, exportaciones de claude.ai y cualquier otro fichero de datos crudos
@@ -28,6 +29,10 @@ ai/models/
 
 ### java ###
 target/
+dependency-reduced-pom.xml
+
+### dashboard ###
+dashboard/dist/
 
 ### python ###
 .venv/
