@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { type GroupStats, type SourceStats, type Stats, useApi } from '../api'
 import { categoryLabel, fmtAgo, fmtCompact, fmtDateTime, fmtDecimal, fmtInt } from '../format'
+import { Card, Status, type Tone, TooltipBox } from '../ui'
 
 // Panel general: cifras clave, severidad por categoría, frescura de las fuentes y registro en Fabric (GET /api/v1/stats).
 
@@ -39,6 +40,7 @@ export default function Overview() {
   if (error) {
     return (
       <Card title="No se pudo cargar el panel">
+
         <p className="text-sm text-ink-2">{error}</p>
         <p className="mt-2 text-sm text-muted">
           Comprueba que el Gateway (puerto 8080) e ioc-service (8081) están en marcha y que la clave de
@@ -94,16 +96,6 @@ export default function Overview() {
 
       <p className="text-xs text-muted">Datos generados {fmtDateTime(data.generatedAt)}.</p>
     </div>
-  )
-}
-
-function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-lg border border-line bg-surface p-5">
-      <h2 className="text-sm font-semibold">{title}</h2>
-      {subtitle && <p className="mt-1 text-sm text-ink-2">{subtitle}</p>}
-      <div className="mt-4">{children}</div>
-    </section>
   )
 }
 
@@ -291,16 +283,7 @@ function SeverityHistogram({ stats }: { stats: Stats }) {
   )
 }
 
-function TooltipBox({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-md border border-line bg-surface px-3 py-2 text-xs text-ink-2 shadow-sm">
-      <div className="mb-1 font-medium text-ink">{title}</div>
-      {children}
-    </div>
-  )
-}
-
-type Freshness = { label: string; tone: 'good' | 'warning' | 'critical' | 'none' }
+type Freshness = { label: string; tone: Tone }
 
 function freshness(s: SourceStats, now: number): Freshness {
   if (s.role === 'organization') return { label: '—', tone: 'none' }
@@ -308,19 +291,6 @@ function freshness(s: SourceStats, now: number): Freshness {
   const hours = (now - new Date(s.lastFetchedAt).getTime()) / 3_600_000
   const expected = EXPECTED_HOURS[s.code] ?? 1
   return hours <= 2 * expected ? { label: 'Al día', tone: 'good' } : { label: 'Retrasada', tone: 'warning' }
-}
-
-/** Estado con icono y texto: el color nunca va solo. */
-function Status({ f }: { f: Freshness }) {
-  if (f.tone === 'none') return <span className="text-muted">{f.label}</span>
-  const color = { good: 'text-good', warning: 'text-warning', critical: 'text-critical' }[f.tone]
-  const icon = { good: '✓', warning: '!', critical: '✕' }[f.tone]
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span aria-hidden className={`font-bold ${color}`}>{icon}</span>
-      {f.label}
-    </span>
-  )
 }
 
 function SourcesTable({ sources }: { sources: SourceStats[] }) {
@@ -353,7 +323,7 @@ function SourcesTable({ sources }: { sources: SourceStats[] }) {
                 <td className="py-1.5 text-right">{s.role === 'signal' ? '—' : fmtInt(s.sightings)}</td>
                 <td className="py-1.5 text-right">{s.role === 'signal' ? '—' : fmtInt(s.activeLast48h)}</td>
                 <td className="py-1.5 pl-4">
-                  <Status f={freshness(s, now)} />
+                  <Status {...freshness(s, now)} />
                 </td>
               </tr>
             ))}
@@ -383,7 +353,7 @@ function FabricTable({ stats }: { stats: Stats }) {
               <td className="py-1.5 text-right">{fmtInt(f.registered)}</td>
               <td className="py-1.5 text-right">{fmtInt(f.pending)}</td>
               <td className="py-1.5 text-right">
-                {f.failed > 0 ? <Status f={{ label: fmtInt(f.failed), tone: 'critical' }} /> : '0'}
+                {f.failed > 0 ? <Status label={fmtInt(f.failed)} tone="critical" /> : '0'}
               </td>
             </tr>
           ))}

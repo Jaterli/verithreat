@@ -179,7 +179,10 @@ Las exportaciones `recent` cubren pocos días y se regeneran cada pocos minutos.
        sin validar; sin decaimiento).
     4. Modelo A como señal débil en dominios y hosts de URL (no IP, no doble uso): `S = 1 − (1 − E)(1 − 0,3·p)`.
     5. Disputado = dominio cuyo registrable está en el top 10.000 de Tranco, **salvo plataformas de doble uso**
-       (un `x.workers.dev` no hereda la popularidad): se marca y `S × 0,5`.
+       (un `x.workers.dev` no hereda la popularidad) **y subdominios de un sufijo privado de la PSL** (`x.us.com`,
+       `x.ddns.net`, `zsp15.poznan.pl`; `under_private_suffix()` en `loaders.py`, 30-10-2026: eran 35 de 133
+       disputados, porque `registered_domain()` ignora la sección privada y no se cambia para no tocar el modelo):
+       se marca y `S × 0,5`.
     6. `severity = round(100·S)`; `components` guarda cada término, la categoría (la de la familia que más aporta) y
        el hash de la configuración. Historial: fila nueva solo si no había puntuación, cambia ≥5 puntos o cambia
        `disputed`. Se ejecuta tras cada ingesta horaria (`run_ingest.sh`, ~15 s).
@@ -442,11 +445,20 @@ final da la cobertura por grupo. En Windows: el `.venv` del repo es de Linux/WSL
    organización y modelo activo; 1 test nuevo, 15 en total); (b) ~~esqueleto y panel general~~ (hecho el 29-10-2026,
    `dashboard/`: proxy de Vite con la clave de `org-alpha` «dashboard (dev)»; el dashboard actúa como esa
    organización. Interfaz en español; enrutado por hash sin dependencias; paleta de referencia de visualización con
-   tema claro y oscuro; probado de principio a fin con la base real y capturas en los dos temas); (c) indicadores:
-   búsqueda, listado filtrado y detalle con la severidad explicada término a término; (d) formulario de aportación.
+   tema claro y oscuro; probado de principio a fin con la base real y capturas en los dos temas); (c) ~~indicadores~~ (hecho el 30-10-2026:
+   búsqueda por valor, listado filtrado con los filtros en el hash de la URL y detalle que rehace la cuenta de
+   `score.py` con los términos de `components` (familias con r y d, evidencia, modelo, disputado) y comprueba que da
+   la severidad guardada; observaciones con su registro en Fabric e historial. Sin cambios en la API); (d) ~~formulario
+   de aportación~~ (hecho el 30-10-2026: mismas comprobaciones que el servicio en el navegador, resultado con valor
+   normalizado, huella, estado de Fabric y enlace al detalle; probado a través del proxy: 201 nueva, 200 repetida, 400
+   valor no válido y fecha futura; los datos de prueba se borraron). El bloque 06 queda completo; `npm run build`
+   avisa de un bundle de 644 kB (Recharts), aceptable para un panel interno.
    Fuera por complejidad: login de analistas y despliegue de producción (el proxy solo existe en desarrollo).
 8. Mantenimiento: revisar `DUAL_USE` (candidatos vistos: `upload.cc`, `replit.dev`, `trycloudflare.com`,
-   `wasmer.app`, `backblazeb2.com`); repetir la validación con
+   `wasmer.app`, `backblazeb2.com`; y, por los disputados del 30-10-2026, `bc.googleusercontent.com` (63 de 98),
+   `cloudapp.azure.com`, `myftpupload.com`, `firebasedatabase.app`, `firebaseio.com`, `mybluehost.me`,
+   `wpengine.com`, `sslip.io`, `xsrv.jp`, y el DNS inverso de operadoras: `comcast.net`, `cox.net`, `ziggo.nl`…;
+   ampliarla cambia el entrenamiento del modelo A); repetir la validación con
    VirusTotal cuando cambie el conjunto de fuentes o pasen meses.
 
 ## 10. Documentos de referencia

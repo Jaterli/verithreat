@@ -34,7 +34,8 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from loaders import is_dual_use, is_ip, load_tranco, registered_domain, to_punycode  # noqa: E402
+from loaders import (is_dual_use, is_ip, load_tranco, registered_domain, to_punycode,  # noqa: E402
+                     under_private_suffix)
 
 CONFIG_PATH = Path(__file__).resolve().parent / "severity_config.json"
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models" / "model_a"
@@ -184,8 +185,10 @@ def compute(conn, cfg: dict, tranco_path: Path, now: pd.Timestamp) -> tuple:
     df["s"] = 1 - (1 - df["evidence"]) * (1 - beta * df["p_malicious"].fillna(0))
 
     top = set(load_tranco(tranco_path).head(cfg["disputed"]["tranco_top"])["domain"])
-    # Un subdominio de una plataforma de doble uso (x.workers.dev) es de un usuario: no hereda la popularidad
-    df["disputed"] = (df["type"] == "domain") & df["value"].map(lambda v: not is_dual_use(v) and registered_domain(v) in top)
+    # Un subdominio de una plataforma de doble uso (x.workers.dev) o de un sufijo privado de la PSL (x.us.com,
+    # x.ddns.net, zsp15.poznan.pl) es de otra persona: no hereda la popularidad del dominio padre
+    df["disputed"] = (df["type"] == "domain") & df["value"].map(
+        lambda v: not is_dual_use(v) and not under_private_suffix(v) and registered_domain(v) in top)
     df.loc[df["disputed"], "s"] *= cfg["disputed"]["factor"]
     df["severity"] = (100 * df["s"]).round().astype(int).clip(0, 100)
     return df, model_id

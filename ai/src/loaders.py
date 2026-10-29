@@ -58,6 +58,25 @@ def registered_domain(host: str) -> str:
         return ".".join(p[-2:]) if len(p) >= 2 else host
 
 
+_EXT_PRIVATE = None
+
+
+def under_private_suffix(host: str) -> bool:
+    """¿Cuelga el host de un sufijo de la sección privada de la PSL (us.com, ddns.net, ngrok.io, poznan.pl…)?
+
+    En esos espacios cada subdominio es de alguien distinto, como en las plataformas de doble uso, así que no hereda
+    la popularidad del dominio padre. registered_domain() sigue sin usar esa sección: de ella dependen la partición
+    del modelo A, la clase no maliciosa y DUAL_USE. Sin tldextract devuelve False."""
+    global _EXT_PRIVATE
+    try:
+        import tldextract
+    except ImportError:
+        return False
+    if _EXT_PRIVATE is None:
+        _EXT_PRIVATE = tldextract.TLDExtract(suffix_list_urls=(), cache_dir=None, include_psl_private_domains=True)
+    return bool(_EXT_PRIVATE(host).is_private)
+
+
 def to_punycode(s: str) -> str:
     """Nombre IDN (homógrafos, .zip japoneses...) a su forma ASCII; si no se puede, se devuelve igual."""
     try:

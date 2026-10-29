@@ -55,6 +55,107 @@ export interface Stats {
   model: ModelInfo | null
 }
 
+export const INDICATOR_TYPES = ['domain', 'url', 'ip', 'cidr', 'sha256', 'md5', 'sha1'] as const
+
+/** Mejor observación de una familia de fuentes, tal como la guarda score.py en components.families. */
+export interface FamilyTerm {
+  source: string
+  reliability: number
+  grade: string
+  decay: number
+  age_days: number
+}
+
+/** components de una puntuación (ai/src/score.py, función components). */
+export interface ScoreComponents {
+  config: string
+  category: string | null
+  families: Record<string, FamilyTerm>
+  evidence: number
+  ipsum_level?: number
+  model?: { host: string; p_malicious: number; beta: number }
+  disputed?: { reason: string; factor: number }
+}
+
+export interface Score {
+  severity: number
+  disputed: boolean
+  pMalicious: number | null
+  computedAt: string
+  components: ScoreComponents
+}
+
+export interface SightingSummary {
+  firstSeen: string
+  lastConfirmed: string
+  sightings: number
+  sources: number
+  families: number
+  categories: string[]
+  sourceNames: string[]
+  ipsumLevel: number | null
+}
+
+export interface IndicatorView {
+  id: number
+  type: string
+  value: string
+  fingerprint: string
+  score: Score | null
+  summary: SightingSummary | null
+}
+
+export interface IndicatorRow {
+  id: number
+  type: string
+  value: string
+  category: string | null
+  severity: number
+  disputed: boolean
+  computedAt: string
+}
+
+export interface Page<T> {
+  items: T[]
+  page: number
+  size: number
+  hasNext: boolean
+}
+
+export interface FabricRecord {
+  status: 'pending' | 'registered' | 'failed'
+  canonicalHash: string | null
+  txId: string | null
+  mspId: string | null
+  registeredAt: string | null
+  attempts: number
+}
+
+export interface Sighting {
+  source: string
+  category: string
+  seenAt: string
+  lastConfirmedAt: string
+  status: string | null
+  malwareFamily: string | null
+  confidence: number | null
+  reporter: string | null
+  corroborated: boolean | null
+  fabric: FabricRecord | null
+}
+
+export interface ScorePoint {
+  computedAt: string
+  severity: number
+  disputed: boolean
+}
+
+export interface IndicatorDetail {
+  indicator: IndicatorView
+  sightings: Sighting[]
+  scoreHistory: ScorePoint[]
+}
+
 export class ApiError extends Error {
   constructor(readonly status: number, message: string) {
     super(message)
